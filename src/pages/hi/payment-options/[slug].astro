@@ -1,0 +1,75 @@
+---
+import SMMPanelPaymentOptCard from "../../../components/SMM_panel_PaymentOptCard.astro";
+import { getAPIPath, getImageBasePath, optimizeImageUrl } from "../../../data/utils";
+import MainLayoutNew from "../../../layouts/MainLayout.astro";
+import { metaDataHi } from "../data";
+
+interface paymentOptionSchema {
+    id: string,
+    paymentLogo: string,
+    paymentOptTitle: string,
+    dataType: string,
+}
+
+export const prerender = true;
+export async function getStaticPaths() {
+    const allpaymentOptionsFetch: any = await fetch(getAPIPath() + "payments");
+    const allpaymentOptionRes: paymentOptionSchema[] = await allpaymentOptionsFetch.json();
+
+    return allpaymentOptionRes.map((paymentOption: paymentOptionSchema) => ({
+        params: { slug: paymentOption.paymentOptTitle.toLowerCase().replaceAll(" ", "-").replaceAll("/", "-") },
+        props: { paymentOption },
+    }));
+}
+
+const { paymentOption } = Astro.props;
+const { slug } = Astro.params;
+
+// After Payment Options are fetched, Fetch the Panels that supports indivisual Payment Option
+const allPanelRes = await fetch(getAPIPath() + "panels").then(Response => Response.json());
+// const allPanelRes :any[] = await fetch("https://smmsearch.io/api/panels").then(Response => Response.json());
+
+let supportedPanels: any[] = [];
+
+for (let i = 0; i < allPanelRes.length; i++) {
+    for (let j = 0; j < allPanelRes[i].paymentOptions.length; j++) {
+        if(allPanelRes[i].paymentOptions[j].payOption.toLowerCase().replaceAll(" ", "-").replaceAll("/", "-") === slug)
+            supportedPanels.push(allPanelRes[i]);
+    }
+}
+
+const allSiteFetch:any = await fetch(getAPIPath() + "siteSettings/" + import.meta.env.SITESETTINGSKEY).then(Response => Response.json());
+---
+
+<MainLayoutNew 
+    siteTitle = {allSiteFetch.SiteTitle} 
+    lang={metaDataHi.language}
+    title={paymentOption.paymentOptTitle} 
+    metaDescription={`List of SMM Panels that supports ${slug[0].toUpperCase()} as Payment Option`} 
+    pageType="article"
+    pageFeaturedImage={getImageBasePath() + paymentOption.paymentLogo}>
+
+    <div class="content-wrapper flex flex-wrap lg:flex-col lg:justify-start justify-center gap-5 my-6 text-white">
+        <h1 class="font-bold text-center text-2xl">{metaDataHi.text[40]} <span class="capitalize">{slug}</span> {metaDataHi.text[41]}</h1>
+        <h2 class="font-semibold text-xl flex gap-2">{metaDataHi.text[42]} <span class="capitalize flex gap-2"> <img src={getImageBasePath() + paymentOption.paymentLogo} height="28px" class="size-7 rounded-full" alt={`${slug} Logo`}> {slug}</h2>
+        
+        <div class="wrapper flex lg:justify-start md:justify-center flex-wrap gap-4 gap-y-6">
+            {
+                supportedPanels.length > 0 &&
+                supportedPanels.map((panel)=>(
+
+                    <SMMPanelPaymentOptCard
+                        lang={metaDataHi.language}
+                        imageSrc = {getImageBasePath() + panel.panelFeaturedImage}
+                        panelTitle = {panel.panelTitle}
+                        slugURL = {panel.panelSlug}
+                        payMethods = {panel.paymentOptions}
+                        requiredPaymentMatch = {slug}
+                    />
+
+                ))
+            }
+        </div>
+            
+    </div>
+</MainLayoutNew>

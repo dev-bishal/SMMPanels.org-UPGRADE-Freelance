@@ -1,0 +1,176 @@
+---
+import AdminGreetings from "./AdminGreetings.astro";
+import ChartPie from "./ChartPie.astro";
+
+interface Props {
+	UserName : string,
+	PanelData : any[],
+	PageData : any[],
+	ServiceData : any[],
+	MessageData : any[],
+	PaymentData : any[],
+}
+const {UserName, PanelData, PageData, ServiceData, MessageData, PaymentData} = Astro.props;
+
+let chartValue = [PanelData.length, PageData.length, ServiceData.length, MessageData.length, PaymentData.length];
+
+---
+<style is:inline>
+    .bar-1 { background-color: #3b82f6; } /* blue-600 */
+    .bar-2 { background-color: #10b981; } /* emerald-500 */
+    .bar-3 { background-color: #f59e0b; } /* amber-500 */
+    .bar-4 { background-color: #ef4444; } /* red-500 */
+    .bar-5 { background-color: #8b5cf6; } /* violet-500 */
+    .bar-6 { background-color: #06b6d4; } /* cyan-500 */
+    .bar-7 { background-color: #f97316; } /* orange-500 */
+    .bar-8 { background-color: #ec4899; } /* pink-500 */
+</style>
+
+<!-- Dashboard Page -->
+	<div class="page active" id="dashboard">
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+			<div class="bg-white rounded-lg shadow col-span-1 lg:col-span-2">
+				<AdminGreetings {UserName}/>
+			</div>
+
+            {
+                (PanelData.length != 0 && PageData.length != 0 && ServiceData.length != 0) ? 
+                (
+                <!-- Pie Chart -->
+                <div class="bg-white rounded-lg shadow p-6 col-span-1">
+                    <h3 class="text-xl font-semibold mb-4">Content Published</h3>
+                    <div class="space-y-4">
+                        <div class="h-[250px] w-full">
+                            <ChartPie {chartValue}/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6 col-span-1">
+                    <!-- Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 col-span-1 lg:col-span-2">
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                                    <i class="fas fa-users fa-2x"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-gray-600">Panels</p>
+                                    <h3 class="text-2xl font-bold">{PanelData.length}</h3>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <p class="text-blue-600 flex items-center">
+                                    <span class="flex items-center gap-1">
+                                        <i class="fa-solid fa-arrow-trend-up"></i> Rising
+                                    </span>
+                                    <span class="ml-2 text-gray-500">Total Panels Listed</span>
+                                </p>
+                            </div>
+                        </div>
+                
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                                    <i class="fas fa-shopping-cart fa-2x"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-gray-600">Services</p>
+                                    <h3 class="text-2xl font-bold">{ServiceData.length}</h3>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <p class="text-blue-600 flex items-center">
+                                    <span class="flex items-center">
+                                        <i class="fa-solid fa-arrow-trend-up"></i>
+                                    </span>
+                                    <span class="ml-2 text-gray-500">Indivisual page for these Services</span>
+                                </p>
+                            </div>
+                        </div>
+                
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-red-100 text-red-600">
+                                    <i class="fa-solid fa-message"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-gray-600">New Messages</p>
+                                    <h3 class="text-2xl font-bold">{MessageData.length}</h3>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <p class="text-blue-600 flex items-center">
+                                    <span class="flex items-center">
+                                        <i class="fa-solid fa-arrow-trend-up"></i>
+                                    </span>
+                                    <span class="ml-2 text-gray-500">User Messages Received</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-blue-100 text-green-600">
+                                    <i class="fa-regular fa-file fa-2x"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-gray-600">Pages</p>
+                                    <h3 class="text-2xl font-bold">{PageData.length}</h3>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <p class="text-blue-600 flex items-center">
+                                    <span class="flex items-center">
+                                        <i class="fa-solid fa-arrow-trend-up"></i>
+                                    </span>
+                                    <span class="ml-2 text-gray-500">Indivisual pages such as about us</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+    
+                <!-- Table -->
+                <div class="bg-white rounded-lg shadow p-6 col-span-1 lg:col-span-2">
+                    <h3 class="text-xl font-semibold mb-4">Recent Active Panels</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead>
+                                <tr class="text-left text-gray-500">
+                                    <th class="py-2">Slug</th>
+                                    <th class="py-2">Panel Title</th>
+                                    <th class="py-2">Date</th>
+                                    <th class="py-2">Rating</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {
+                                    PanelData.reverse().slice(0,10).map(item => (
+                                        <tr class="border-t">
+                                            <td class="py-3">{item.panelSlug}</td>
+                                            <td class="py-3">{item.panelTitle}</td>
+                                            <td class="py-3">{new Date(item.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</td>
+                                            <td class="py-3">{item.rating}</td>
+                                        </tr>
+                                    ))
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                )
+                :
+                <!-- Error Message -->
+                <div class="my-8 col-span-2 grid place-items-center">
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Oops! No Data Added Yet</h2>
+                    <p class="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed text-center">
+                        Your Admin Panel is all new and fresh. Make some panels, services and Pages. Fill it with some data, and the analytics will start to show up.
+                    </p>
+                </div>
+            }
+
+
+		</div>
+	</div>

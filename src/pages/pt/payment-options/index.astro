@@ -1,0 +1,46 @@
+---
+import paymentcover from "../../../assets/payment-cover.webp";
+import paymenticons from "../../../assets/payment-icons.png";
+
+import HeaderBanner from "../../../components/HeaderBanner.astro";
+import PaymentCard from "../../../components/PaymentCard.astro";
+import { getAPIPath, mainData } from "../../../data/utils";
+import MainLayoutNew from "../../../layouts/MainLayout.astro";
+import { metaDataPt } from "../data";
+
+interface paymentOptionStructure{
+    id: string,
+    paymentLogo: string,
+    paymentOptTitle: string,
+}
+const allPaymentOptions : paymentOptionStructure[] = await fetch(getAPIPath() + "payments").then(Response => Response.json());
+
+const allSiteFetch:any = await fetch(getAPIPath() + "siteSettings/" + import.meta.env.SITESETTINGSKEY).then(Response => Response.json());
+---
+
+<MainLayoutNew 
+    siteTitle = {allSiteFetch.SiteTitle} 
+    lang={metaDataPt.language} 
+    pageType="page" 
+    title={allSiteFetch.SiteTitle + " - Payment Options"} 
+    metaDescription="Lorem ipsum dolor sit, amet consectetur adipisicing elit. Nobis aut nesciunt et magni? Est temporibus, aperiam veritatis odit numquam natus officia error, sequi illum quis quas molestiae et quisquam quod.">
+    <!-- Hero Section -->
+    <HeaderBanner imgUrl={paymentcover.src} iconImgUrl={paymenticons.src} titleText={metaDataPt.text[37]} descriptionText={metaDataPt.text[38]} />
+
+    <!-- Payment options Sections-->
+    <span class="flex w-full lg:justify-between lg:items-center gap-2 mb-3 flex-col lg:flex-row">
+        <h2 class="uppercase text-xl text-white font-bold">
+            {metaDataPt.text[39]} -
+        </h2>
+    </span>
+    <section class="payment-options-container relative w-full flex flex-wrap gap-3 items-center" class:list={[
+        allPaymentOptions.length > 3 ? "justify-center" : "justify-start"
+    ]}>
+        {
+            allPaymentOptions.map((paymentOption : paymentOptionStructure)=>(
+                <PaymentCard lang={metaDataPt.language} img={paymentOption.paymentLogo} panelsCount={12} title={paymentOption.paymentOptTitle} />
+            ))
+        }
+    </section>
+
+</MainLayoutNew>

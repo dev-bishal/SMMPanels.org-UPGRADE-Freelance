@@ -1,0 +1,624 @@
+---
+import { isAdminLoggedIn } from "../../data/admin-utils";
+import { getAPIPath, getImageBasePath } from "../../data/utils";
+import AdminLayout from "../../layouts/AdminLayout.astro";
+
+
+const adminCookie = Astro.cookies.get("admin");
+
+//#region Authentication
+if(!isAdminLoggedIn(adminCookie)){
+    return Astro.redirect("/admin/login");
+}
+
+const response = await fetch(getAPIPath() + `auth/validate`, {
+	method: "POST",
+    body : JSON.stringify({ userId : adminCookie?.value}),
+    headers : {
+        'Content-Type': 'application/json',
+        "origin" : "http://localhost:4321",
+        "x-api-key" : import.meta.env.API_SECURITY_KEY
+    }
+}).then(res => res.json());
+
+// console.log(response);
+
+if(response.status !== 200 && response.isValid !== true){
+    return Astro.redirect("/admin/login");
+}
+//#endregion
+---
+
+<style is:inline>
+    .contact-item {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .contact-item:hover {
+        background-color: #f8fafc;
+    }
+
+    .contact-item.active {
+        background-color: #3b82f6;
+        color: white;
+    }
+
+    .contact-item.active .contact-name,
+    .contact-item.active .contact-preview,
+    .contact-item.active .contact-time {
+        color: white;
+    }
+
+    .contact-item.unread {
+        background-color: #f0f9ff;
+        border-left: 3px solid #3b82f6;
+    }
+
+    .message-bubble {
+        max-width: 70%;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .message-bubble.sent {
+        margin-left: auto;
+        background-color: #3b82f6;
+        color: white;
+    }
+
+    .message-bubble.received {
+        background-color: #f3f4f6;
+        color: #374151;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .empty-state {
+        transition: all 0.3s ease;
+    }
+
+    .empty-state:hover {
+        transform: scale(1.02);
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .online {
+        background-color: #10b981;
+    }
+
+    .offline {
+        background-color: #6b7280;
+    }
+
+    .away {
+        background-color: #f59e0b;
+    }
+</style>
+
+<AdminLayout PageTitle="Messages" PageHeader="Messages" UserName={response.user.fullname || response.user.username} avatarImagePath={getImageBasePath() + response.user.ProfilePic} emailAdd = {response.user.email}>
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Messages</h1>
+                    <p class="text-gray-600">Read and manage your conversations</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="relative">
+                        <input type="text" placeholder="Search messages..."
+                            class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400"></i>
+                        </div>
+                    </div>
+                    <button
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center">
+                        <i class="fas fa-filter mr-2"></i> Filter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-4 h-[600px]">
+                <!-- Left Side - Contacts List -->
+                <div class="lg:col-span-1 border-r border-gray-200 overflow-y-auto">
+                    <!-- Contacts Header -->
+                    <div class="p-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-800">Conversations</h2>
+                        <p class="text-gray-600 text-sm mt-1">
+                            <span id="unread-count">3</span> unread messages
+                        </p>
+                    </div>
+
+                    <!-- Contacts List -->
+                    <div id="contacts-list" class="divide-y divide-gray-100">
+                        <!-- Contacts will be dynamically added here -->
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="contacts-empty" class="empty-state hidden text-center py-12 px-4">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-comments text-gray-400 text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">No conversations</h3>
+                        <p class="text-gray-600">Your message conversations will appear here.</p>
+                    </div>
+                </div>
+
+                <!-- Right Side - Message View -->
+                <div class="lg:col-span-3 flex flex-col">
+                    <!-- Message Header -->
+                    <div id="message-header" class="p-4 border-b border-gray-200 hidden">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <img id="contact-avatar" class="w-10 h-10 rounded-full" src="" alt="">
+                                <div>
+                                    <h3 id="contact-name" class="font-semibold text-gray-800"></h3>
+                                    <div class="flex items-center space-x-2">
+                                        <span id="contact-status" class="status-dot"></span>
+                                        <span id="contact-status-text" class="text-gray-600 text-sm"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button id="mark-read"
+                                    class="text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100">
+                                    <i class="fas fa-envelope-open"></i>
+                                </button>
+                                <button id="mark-unread"
+                                    class="text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100">
+                                    <i class="fas fa-envelope"></i>
+                                </button>
+                                <button id="delete-conversation"
+                                    class="text-red-600 hover:text-red-900 p-2 rounded-lg hover:bg-red-50">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Messages Container -->
+                    <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                        <!-- Messages will be dynamically added here -->
+                    </div>
+
+                    <!-- Empty Message State -->
+                    <div id="message-empty" class="empty-state flex-1 flex items-center justify-center">
+                        <div class="text-center">
+                            <div
+                                class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-comment text-gray-400 text-3xl"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">No conversation selected</h3>
+                            <p class="text-gray-600 mb-6">Select a conversation from the list to view messages</p>
+                            <div class="flex justify-center space-x-4 text-sm text-gray-500">
+                                <div class="text-center">
+                                    <div
+                                        class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                                        <i class="fas fa-search text-blue-600"></i>
+                                    </div>
+                                    <p>Search messages</p>
+                                </div>
+                                <div class="text-center">
+                                    <div
+                                        class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                                        <i class="fas fa-filter text-green-600"></i>
+                                    </div>
+                                    <p>Filter conversations</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script is:inline>
+        // Sample data
+        const contacts = [
+            {
+                id: 1,
+                name: "Sarah Johnson",
+                avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+                status: "online",
+                lastSeen: "2 min ago",
+                unread: 3,
+                lastMessage: "Hey! I wanted to follow up on our project discussion from yesterday...",
+                lastMessageTime: "10:24 AM",
+                messages: [
+                    {
+                        id: 1,
+                        type: "received",
+                        content: "Hi there! I hope you're doing well.",
+                        time: "9:30 AM",
+                        read: true
+                    },
+                    {
+                        id: 2,
+                        type: "sent",
+                        content: "Hello Sarah! I'm doing great, thanks. How about you?",
+                        time: "9:32 AM",
+                        read: true
+                    },
+                    {
+                        id: 3,
+                        type: "received",
+                        content: "I'm good too! I wanted to follow up on our project discussion from yesterday.",
+                        time: "9:35 AM",
+                        read: true
+                    },
+                    {
+                        id: 4,
+                        type: "received",
+                        content: "I've reviewed the design mockups and have some feedback.",
+                        time: "10:15 AM",
+                        read: false
+                    },
+                    {
+                        id: 5,
+                        type: "received",
+                        content: "Could we schedule a quick call to discuss?",
+                        time: "10:24 AM",
+                        read: false
+                    }
+                ]
+            },
+            {
+                id: 2,
+                name: "Mike Rodriguez",
+                avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+                status: "away",
+                lastSeen: "30 min ago",
+                unread: 0,
+                lastMessage: "The meeting has been rescheduled to 3 PM tomorrow.",
+                lastMessageTime: "Yesterday",
+                messages: [
+                    {
+                        id: 1,
+                        type: "received",
+                        content: "Hi! Quick update about tomorrow's meeting.",
+                        time: "Yesterday, 4:30 PM",
+                        read: true
+                    },
+                    {
+                        id: 2,
+                        type: "sent",
+                        content: "Hey Mike! What's the update?",
+                        time: "Yesterday, 4:32 PM",
+                        read: true
+                    },
+                    {
+                        id: 3,
+                        type: "received",
+                        content: "The meeting has been rescheduled to 3 PM tomorrow.",
+                        time: "Yesterday, 4:35 PM",
+                        read: true
+                    },
+                    {
+                        id: 4,
+                        type: "sent",
+                        content: "Thanks for letting me know! I'll update my calendar.",
+                        time: "Yesterday, 4:36 PM",
+                        read: true
+                    }
+                ]
+            },
+            {
+                id: 3,
+                name: "Emily Chen",
+                avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+                status: "offline",
+                lastSeen: "2 hours ago",
+                unread: 1,
+                lastMessage: "I've sent you the files you requested. Let me know if you need anything else!",
+                lastMessageTime: "9:15 AM",
+                messages: [
+                    {
+                        id: 1,
+                        type: "sent",
+                        content: "Hi Emily! Could you please send me the project files?",
+                        time: "Yesterday, 5:20 PM",
+                        read: true
+                    },
+                    {
+                        id: 2,
+                        type: "received",
+                        content: "Of course! I'll send them over first thing tomorrow morning.",
+                        time: "Yesterday, 5:45 PM",
+                        read: true
+                    },
+                    {
+                        id: 3,
+                        type: "received",
+                        content: "I've sent you the files you requested. Let me know if you need anything else!",
+                        time: "9:15 AM",
+                        read: false
+                    }
+                ]
+            },
+            {
+                id: 4,
+                name: "Alex Thompson",
+                avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+                status: "online",
+                lastSeen: "Just now",
+                unread: 0,
+                lastMessage: "Looking forward to our collaboration!",
+                lastMessageTime: "Monday",
+                messages: [
+                    {
+                        id: 1,
+                        type: "received",
+                        content: "Hello! It was great meeting you at the conference.",
+                        time: "Monday, 2:15 PM",
+                        read: true
+                    },
+                    {
+                        id: 2,
+                        type: "sent",
+                        content: "Hi Alex! Likewise, it was a pleasure meeting you too.",
+                        time: "Monday, 2:20 PM",
+                        read: true
+                    },
+                    {
+                        id: 3,
+                        type: "received",
+                        content: "Looking forward to our collaboration!",
+                        time: "Monday, 2:25 PM",
+                        read: true
+                    }
+                ]
+            },
+            {
+                id: 5,
+                name: "Jessica Williams",
+                avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+                status: "away",
+                lastSeen: "1 hour ago",
+                unread: 0,
+                lastMessage: "Thanks for your help with the documentation!",
+                lastMessageTime: "Sunday",
+                messages: [
+                    {
+                        id: 1,
+                        type: "received",
+                        content: "Hi! I need some help with the project documentation.",
+                        time: "Sunday, 11:30 AM",
+                        read: true
+                    },
+                    {
+                        id: 2,
+                        type: "sent",
+                        content: "Sure Jessica! I'd be happy to help. What do you need?",
+                        time: "Sunday, 11:35 AM",
+                        read: true
+                    },
+                    {
+                        id: 3,
+                        type: "received",
+                        content: "Thanks for your help with the documentation!",
+                        time: "Sunday, 12:15 PM",
+                        read: true
+                    }
+                ]
+            }
+        ];
+
+        // DOM Elements
+        const contactsList = document.getElementById('contacts-list');
+        const contactsEmpty = document.getElementById('contacts-empty');
+        const messageHeader = document.getElementById('message-header');
+        const messagesContainer = document.getElementById('messages-container');
+        const messageEmpty = document.getElementById('message-empty');
+        const unreadCount = document.getElementById('unread-count');
+
+        let selectedContactId = null;
+
+        // Render contacts list
+        function renderContacts() {
+            contactsList.innerHTML = '';
+
+            if (contacts.length === 0) {
+                contactsEmpty.classList.remove('hidden');
+                return;
+            }
+
+            contactsEmpty.classList.add('hidden');
+
+            contacts.forEach(contact => {
+                const contactElement = createContactElement(contact);
+                contactsList.appendChild(contactElement);
+            });
+
+            updateUnreadCount();
+        }
+
+        // Create contact element
+        function createContactElement(contact) {
+            const div = document.createElement('div');
+            div.className = `contact-item p-4 ${contact.unread > 0 ? 'unread' : ''} ${selectedContactId === contact.id ? 'active' : ''}`;
+            div.setAttribute('data-contact-id', contact.id);
+
+            div.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <div class="relative">
+                        <img class="w-12 h-12 rounded-full" src="${contact.avatar}" alt="${contact.name}">
+                        <span class="status-dot ${contact.status} absolute bottom-0 right-0 border-2 border-white"></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <h3 class="contact-name font-medium text-gray-900 truncate">${contact.name}</h3>
+                            <span class="contact-time text-xs text-gray-500">${contact.lastMessageTime}</span>
+                        </div>
+                        <p class="contact-preview text-sm text-gray-600 truncate mt-1">${contact.lastMessage}</p>
+                        ${contact.unread > 0 ? `
+                            <div class="flex items-center justify-between mt-1">
+                                <span class="text-xs text-blue-600 font-medium">${contact.unread} unread</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+
+            div.addEventListener('click', () => selectContact(contact.id));
+            return div;
+        }
+
+        // Select contact
+        function selectContact(contactId) {
+            selectedContactId = contactId;
+            const contact = contacts.find(c => c.id === contactId);
+
+            if (!contact) return;
+
+            // Update contacts list active state
+            document.querySelectorAll('.contact-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-contact-id="${contactId}"]`).classList.add('active');
+
+            // Show message view
+            showMessageView(contact);
+
+            // Mark messages as read
+            if (contact.unread > 0) {
+                contact.messages.forEach(message => {
+                    message.read = true;
+                });
+                contact.unread = 0;
+                renderContacts();
+            }
+        }
+
+        // Show message view
+        function showMessageView(contact) {
+            messageEmpty.classList.add('hidden');
+            messageHeader.classList.remove('hidden');
+            messagesContainer.innerHTML = '';
+
+            // Update header
+            document.getElementById('contact-avatar').src = contact.avatar;
+            document.getElementById('contact-name').textContent = contact.name;
+            document.getElementById('contact-status').className = `status-dot ${contact.status}`;
+            document.getElementById('contact-status-text').textContent = getStatusText(contact.status, contact.lastSeen);
+
+            // Render messages
+            contact.messages.forEach(message => {
+                const messageElement = createMessageElement(message);
+                messagesContainer.appendChild(messageElement);
+            });
+
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            // Update button events
+            updateButtonEvents(contact.id);
+        }
+
+        // Create message element
+        function createMessageElement(message) {
+            const div = document.createElement('div');
+            div.className = `message-bubble rounded-lg p-3 ${message.type === 'sent' ? 'sent' : 'received'}`;
+
+            div.innerHTML = `
+                <div class="text-sm">${message.content}</div>
+                <div class="text-xs opacity-70 mt-1 text-right">${message.time}</div>
+            `;
+
+            return div;
+        }
+
+        // Get status text
+        function getStatusText(status, lastSeen) {
+            switch (status) {
+                case 'online': return 'Online';
+                case 'away': return `Away - Last seen ${lastSeen}`;
+                case 'offline': return `Offline - Last seen ${lastSeen}`;
+                default: return '';
+            }
+        }
+
+        // Update button events
+        function updateButtonEvents(contactId) {
+            const contact = contacts.find(c => c.id === contactId);
+            if (!contact) return;
+
+            // Mark as read
+            document.getElementById('mark-read').onclick = () => {
+                contact.messages.forEach(message => {
+                    message.read = true;
+                });
+                contact.unread = 0;
+                renderContacts();
+            };
+
+            // Mark as unread
+            document.getElementById('mark-unread').onclick = () => {
+                contact.messages.forEach(message => {
+                    message.read = false;
+                });
+                contact.unread = contact.messages.length;
+                renderContacts();
+            };
+
+            // Delete conversation
+            document.getElementById('delete-conversation').onclick = () => {
+                if (confirm('Are you sure you want to delete this conversation? This action cannot be undone.')) {
+                    const index = contacts.findIndex(c => c.id === contactId);
+                    if (index !== -1) {
+                        contacts.splice(index, 1);
+                        selectedContactId = null;
+                        renderContacts();
+                        showEmptyMessageState();
+                    }
+                }
+            };
+        }
+
+        // Show empty message state
+        function showEmptyMessageState() {
+            messageHeader.classList.add('hidden');
+            messagesContainer.innerHTML = '';
+            messageEmpty.classList.remove('hidden');
+        }
+
+        // Update unread count
+        function updateUnreadCount() {
+            const totalUnread = contacts.reduce((sum, contact) => sum + contact.unread, 0);
+            unreadCount.textContent = totalUnread;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function () {
+            renderContacts();
+
+            // Add some sample interactions
+            setTimeout(() => {
+                if (contacts.length > 0) {
+                    selectContact(contacts[0].id);
+                }
+            }, 100);
+        });
+    </script>
+</AdminLayout>

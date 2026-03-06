@@ -1,0 +1,16 @@
+---
+import { isAdminLoggedIn } from "../../data/admin-utils";
+
+const adminCookie = Astro.cookies.get("admin");
+
+if(isAdminLoggedIn(adminCookie)){
+    console.log("deleting Cookie");
+    Astro.cookies.delete("admin");
+    // return Astro.redirect("/admin/login/");
+}
+---
+
+<script define:vars={{userID : adminCookie?.value}}>
+    document.cookie = `admin=${userID}; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    window.location.href = "/admin"
+</script>

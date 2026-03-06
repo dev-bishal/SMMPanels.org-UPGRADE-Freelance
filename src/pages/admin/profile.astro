@@ -1,0 +1,863 @@
+---
+import { isAdminLoggedIn } from "../../data/admin-utils";
+import { getAPIPath, getImageBasePath } from "../../data/utils";
+import AdminLayout from "../../layouts/AdminLayout.astro";
+
+
+const adminCookie = Astro.cookies.get("admin");
+
+//#region Authentication
+if(!isAdminLoggedIn(adminCookie)){
+    return Astro.redirect("/admin/login");
+}
+
+const response = await fetch(getAPIPath() + `auth/validate`, {
+	method: "POST",
+    body : JSON.stringify({ userId : adminCookie?.value}),
+    headers : {
+        'Content-Type': 'application/json',
+        "origin" : "http://localhost:4321",
+        "x-api-key" : import.meta.env.API_SECURITY_KEY
+    }
+}).then(res => res.json());
+
+// console.log(response);
+
+if(response.status !== 200 && response.isValid !== true){
+    return Astro.redirect("/admin/login");
+}
+//#endregion
+---
+
+<style is:inline>
+    .settings-section {
+        transition: all 0.3s ease;
+    }
+
+    .settings-section:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .tab-button {
+        transition: all 0.3s ease;
+    }
+
+    .tab-button.active {
+        background-color: #3b82f6;
+        color: white;
+    }
+
+    .tab-content {
+        display: none;
+        transition: all 0.3s ease;
+    }
+
+    .tab-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .toggle-checkbox:checked {
+        right: 0;
+        border-color: #3b82f6;
+    }
+
+    .toggle-checkbox:checked+.toggle-label {
+        background-color: #3b82f6;
+    }
+
+    .password-requirement.valid {
+            color: #10b981;
+    }
+    
+    .password-requirement.invalid {
+        color: #ef4444;
+    }
+    
+    .password-strength-bar {
+        transition: width 0.3s ease;
+    }
+    
+    .input-error {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+</style>
+
+<AdminLayout PageTitle="My Profile" PageHeader="My Profile" UserName={response.user.fullname || response.user.username} avatarImagePath={getImageBasePath() + response.user.ProfilePic} emailAdd = {response.user.email}>
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex lg:items-center lg:justify-between gap-4 lg:flex-row flex-col">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Profile Settings</h1>
+                    <p class="text-gray-600">Manage your account preferences and security</p>
+                </div>
+                
+            </div>
+        </div>
+    </header>
+    <!-- Main Content -->
+    <main class="py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Settings Sidebar -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl shadow-sm p-6 sticky top-8">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Profile Settings</h3>
+                    <nav class="space-y-2">
+                        <button class="tab-button w-full text-left px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 active" data-tab="profile">
+                            <i class="fas fa-user mr-3"></i> Profile Information
+                        </button>
+                        <button class="tab-button w-full text-left px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100" data-tab="password">
+                            <i class="fas fa-lock mr-3"></i> Password & Security
+                        </button>
+                    </nav>
+
+                    <!-- Account Status -->
+                    <div class="mt-8 pt-6 border-t border-gray-200">
+                        <h4 class="text-sm font-medium text-gray-800 mb-2">Account Status</h4>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600">Verified</span>
+                            <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                                <i class="fas fa-check-circle mr-1"></i> Active
+                            </span>
+                        </div>
+                        <div class="mt-2 text-xs text-gray-500 hidden">
+                            Member since June 2022
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Content -->
+            <div class="lg:col-span-3">
+                <!-- Profile Information -->
+                <div id="profile" class="tab-content hover:-translate-y-0.5 hover:shadow-sm active fade-in">
+                    <form id="profile-form">
+                        
+                        <div class="bg-white rounded-xl shadow-sm p-6 settings-card">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-6">Profile Information</h2>
+                            
+                            <!-- Avatar Section -->
+                            <div class="flex flex-col md:flex-row items-start md:items-center space-y-6 md:space-y-0 md:space-x-8 mb-8">
+                                <div class="shrink-0">
+                                    <div class="relative">
+                                        <img id="avatarImg" class="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover" 
+                                            src="/assets/images/user2.png" 
+                                            onerror="this.onerror=null; this.src='/assets/images/user2.png';"
+                                            alt="Profile picture">
+                                        <div class="absolute bottom-2 right-2">
+                                            <label for="avatar-upload" class="avatar-upload cursor-pointer w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-blue-700">
+                                                <i class="fas fa-camera text-sm"></i>
+                                            </label>
+                                            <input type="file" id="avatar-upload" name="avatar-upload" class="hidden" accept="image/*">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="text-lg font-medium text-gray-800 mb-2">Profile Picture</h3>
+                                    <p class="text-gray-600 mb-4">Recommended: Square JPG, PNG or GIF, at least 500x500 pixels</p>
+                                    <div class="flex space-x-3">
+                                        <label for="avatar-upload" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors">
+                                            Upload New Photo
+                                        </label>
+                                        <button type="button" id="remove-photo" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+                                            Remove Photo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+    
+                            <!-- Personal Information -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="input-group">
+                                    <label class="block text-gray-700 text-sm font-medium mb-2">Login UserID</label>
+                                    <input type="text" title="You cannot edit your UserID (Its permanent)" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="" name ="userid" id ="userid">
+                                </div>
+                                <div class="input-group">
+                                    <label class="block text-gray-700 text-sm font-medium mb-2">Full Name</label>
+                                    <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="" name="userFullname" id="userFullname">
+                                </div>
+                            </div>
+    
+                            <div class="mt-6">
+                                <div class="input-group">
+                                    <span class="text-sm flex mb-2 gap-2 items-center"><label class="block text-gray-700 text-sm font-medium">Email Address</label> (Required for Password Reset)</span class="flex gap-2 items-center">
+                                    <input type="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="john.doe@example.com" name="userEmailAddress" id="userEmailAddress">
+                                </div>
+                            </div>
+
+                            <div class="mt-6">
+                                <div class="input-group">
+                                    <span class="text-sm flex mb-2 gap-2 items-center"><label class="block text-gray-700 text-sm font-medium">Designation</label> (Required for Author Card)</span class="flex gap-2 items-center">
+                                    <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Senior SMM Analyst" name="userDesignation" id="userDesignation">
+                                </div>
+                            </div>
+
+                            <div class="mt-6">
+                                <div class="input-group">
+                                    <span class="text-sm flex mb-2 gap-2 items-center"><label class="block text-gray-700 text-sm font-medium">Bio Description</label> (Required for Author Card)</span class="flex gap-2 items-center">
+                                    <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Senior SMM Analyst with 8+ years of experience in social media marketing and panel testing." name="userBioDescription" id="userBioDescription">
+                                </div>
+                            </div>
+                            
+                            <div class="flex space-x-3 justify-end">
+                                <button type="reset" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center">
+                                    <i class="fas fa-times mr-2"></i> Reset
+                                </button>
+                                <button type="button" id="save-settings" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center">
+                                    <i class="fas fa-save mr-2"></i> Save Changes
+                                </button>
+                            </div>
+                        </div>
+                        
+                    </form>
+                </div>
+
+                <!-- Password & Security -->
+                <div id="password" class="tab-content hover:-translate-y-0.5 hover:shadow-sm fade-in">
+                    <div class="bg-white rounded-xl shadow-sm p-6 settings-card">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-6">Password & Security</h2>
+                        <form id="password-form">
+                            <!-- Current Password -->
+                            <div class="input-group mb-6">
+                                <label class="block text-gray-700 text-sm font-medium mb-2">Current Password</label>
+                                <div class="relative">
+                                    <input type="password" id="current-password" name="oldPassword" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10">
+                                    <button type="button" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 toggle-password" data-target="current-password">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <p id="current-password-error" class="text-red-500 text-xs mt-1 hidden">Current password is incorrect</p>
+                            </div>
+
+                            <!-- New Password -->
+                            <div class="input-group mb-6">
+                                <label class="block text-gray-700 text-sm font-medium mb-2">New Password</label>
+                                <div class="relative">
+                                    <input type="password" id="new-password" name="newPassword" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10">
+                                    <button type="button" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 toggle-password" data-target="new-password">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="password-strength w-full bg-gray-200 rounded-full h-2">
+                                        <div id="password-strength-bar" class="h-2 rounded-full bg-red-500 password-strength-bar" style="width: 0%"></div>
+                                    </div>
+                                    <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                        <span id="password-strength-text">Password strength: Very Weak</span>
+                                        <span id="password-criteria-count">0/4 criteria</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Confirm Password -->
+                            <div class="input-group mb-6">
+                                <label class="block text-gray-700 text-sm font-medium mb-2">Confirm New Password</label>
+                                <div class="relative">
+                                    <input type="password" id="confirm-password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10">
+                                    <button type="button" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 toggle-password" data-target="confirm-password">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <p id="confirm-password-error" class="text-red-500 text-xs mt-1 hidden">Passwords do not match</p>
+                            </div>
+
+                            <!-- Password Requirements -->
+                            <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                                <h4 class="font-medium text-gray-800 mb-3">Password Requirements</h4>
+                                <ul class="text-sm text-gray-600 space-y-2">
+                                    <li id="req-length" class="flex items-center password-requirement invalid">
+                                        <i class="fas fa-times text-red-500 mr-2"></i>
+                                        At least 8 characters
+                                    </li>
+                                    <li id="req-uppercase" class="flex items-center password-requirement invalid">
+                                        <i class="fas fa-times text-red-500 mr-2"></i>
+                                        One uppercase letter
+                                    </li>
+                                    <li id="req-lowercase" class="flex items-center password-requirement invalid">
+                                        <i class="fas fa-times text-red-500 mr-2"></i>
+                                        One lowercase letter
+                                    </li>
+                                    <li id="req-special" class="flex items-center password-requirement invalid">
+                                        <i class="fas fa-times text-red-500 mr-2"></i>
+                                        One number or special character
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- Update Password Button -->
+                            <div class="mt-8">
+                                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center justify-center transition-colors">
+                                    <i class="fas fa-key mr-2"></i> Update Password
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+</AdminLayout>
+<script is:inline>
+    // Get DOM elements
+    let correctPassword = "";
+    const currentPasswordInput = document.getElementById('current-password');
+    const newPasswordInput = document.getElementById('new-password');
+    const confirmPasswordInput = document.getElementById('confirm-password');
+    const currentPasswordError = document.getElementById('current-password-error');
+    const confirmPasswordError = document.getElementById('confirm-password-error');
+    const passwordStrengthBar = document.getElementById('password-strength-bar');
+    const passwordStrengthText = document.getElementById('password-strength-text');
+    const passwordCriteriaCount = document.getElementById('password-criteria-count');
+    const passwordForm = document.getElementById('password-form');
+    const toast = document.getElementById('toast');
+
+        // Password requirement elements
+    const reqLength = document.getElementById('req-length');
+    const reqUppercase = document.getElementById('req-uppercase');
+    const reqLowercase = document.getElementById('req-lowercase');
+    const reqSpecial = document.getElementById('req-special');
+    
+    // Show password functionality
+    document.querySelectorAll('.toggle-password').forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const passwordInput = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+    });
+    
+    // Validate current password
+    async function validateCurrentPassword() {
+        const currentPassword = currentPasswordInput.value;
+        const normalizedHash = correctPassword.replace(/^\$2b\$/, "$2a$").replace(/^\$2y\$/, "$2a$");   
+
+        try {
+            // We wrap the compare in a Promise so we can "await" the result
+            const isMatch = await new Promise((resolve, reject) => {
+                dcodeIO.bcrypt.compare(currentPassword, normalizedHash, (err, res) => {
+                    if (err) reject(err);
+                    else resolve(res);
+                });
+            }); 
+
+            if (isMatch) {
+                currentPasswordInput.classList.remove('input-error');
+                currentPasswordError.classList.add('hidden');
+                console.log("Success! The passwords match.");
+                return true; // Now this actually returns to the caller
+            } else {
+                currentPasswordInput.classList.add('input-error');
+                currentPasswordError.classList.remove('hidden');
+                return false;
+            }
+        } catch (err) {
+            console.error("Comparison error:", err);
+            return false;
+        }
+    }
+    
+    // Validate new password requirements
+    function validateNewPassword() {
+        const password = newPasswordInput.value;
+        let validCount = 0;
+        
+        // Check length
+        if (password.length >= 8) {
+            reqLength.classList.remove('invalid');
+            reqLength.classList.add('valid');
+            reqLength.querySelector('i').classList.remove('fa-times', 'text-red-500');
+            reqLength.querySelector('i').classList.add('fa-check', 'text-green-500');
+            validCount++;
+        } else {
+            reqLength.classList.remove('valid');
+            reqLength.classList.add('invalid');
+            reqLength.querySelector('i').classList.remove('fa-check', 'text-green-500');
+            reqLength.querySelector('i').classList.add('fa-times', 'text-red-500');
+        }
+        
+        // Check uppercase
+        if (/[A-Z]/.test(password)) {
+            reqUppercase.classList.remove('invalid');
+            reqUppercase.classList.add('valid');
+            reqUppercase.querySelector('i').classList.remove('fa-times', 'text-red-500');
+            reqUppercase.querySelector('i').classList.add('fa-check', 'text-green-500');
+            validCount++;
+        } else {
+            reqUppercase.classList.remove('valid');
+            reqUppercase.classList.add('invalid');
+            reqUppercase.querySelector('i').classList.remove('fa-check', 'text-green-500');
+            reqUppercase.querySelector('i').classList.add('fa-times', 'text-red-500');
+        }
+        
+        // Check lowercase
+        if (/[a-z]/.test(password)) {
+            reqLowercase.classList.remove('invalid');
+            reqLowercase.classList.add('valid');
+            reqLowercase.querySelector('i').classList.remove('fa-times', 'text-red-500');
+            reqLowercase.querySelector('i').classList.add('fa-check', 'text-green-500');
+            validCount++;
+        } else {
+            reqLowercase.classList.remove('valid');
+            reqLowercase.classList.add('invalid');
+            reqLowercase.querySelector('i').classList.remove('fa-check', 'text-green-500');
+            reqLowercase.querySelector('i').classList.add('fa-times', 'text-red-500');
+        }
+        
+        // Check special character or number
+        if (/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+            reqSpecial.classList.remove('invalid');
+            reqSpecial.classList.add('valid');
+            reqSpecial.querySelector('i').classList.remove('fa-times', 'text-red-500');
+            reqSpecial.querySelector('i').classList.add('fa-check', 'text-green-500');
+            validCount++;
+        } else {
+            reqSpecial.classList.remove('valid');
+            reqSpecial.classList.add('invalid');
+            reqSpecial.querySelector('i').classList.remove('fa-check', 'text-green-500');
+            reqSpecial.querySelector('i').classList.add('fa-times', 'text-red-500');
+        }
+        
+        // Update password strength indicator
+        updatePasswordStrength(validCount);
+        
+        return validCount === 4;
+    }
+    
+    // Update password strength indicator
+    function updatePasswordStrength(validCount) {
+        let strength = 0;
+        let text = '';
+        let color = '';
+        
+        switch(validCount) {
+            case 0:
+                strength = 0;
+                text = 'Very Weak';
+                color = 'bg-red-500';
+                break;
+            case 1:
+                strength = 25;
+                text = 'Weak';
+                color = 'bg-red-500';
+                break;
+            case 2:
+                strength = 50;
+                text = 'Fair';
+                color = 'bg-yellow-500';
+                break;
+            case 3:
+                strength = 75;
+                text = 'Good';
+                color = 'bg-blue-500';
+                break;
+            case 4:
+                strength = 100;
+                text = 'Strong';
+                color = 'bg-green-500';
+                break;
+        }
+        
+        passwordStrengthBar.style.width = `${strength}%`;
+        passwordStrengthBar.className = `h-2 rounded-full ${color} password-strength-bar`;
+        passwordStrengthText.textContent = `Password strength: ${text}`;
+        passwordCriteriaCount.textContent = `${validCount}/4 criteria`;
+    }
+    
+    // Validate password confirmation
+    function validatePasswordConfirmation() {
+        const newPassword = newPasswordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+        
+        if (newPassword !== confirmPassword) {
+            confirmPasswordInput.classList.add('input-error');
+            confirmPasswordError.classList.remove('hidden');
+            return false;
+        } else {
+            confirmPasswordInput.classList.remove('input-error');
+            confirmPasswordError.classList.add('hidden');
+            return true;
+        }
+    }
+    
+    // Event listeners for real-time validation
+    currentPasswordInput.addEventListener('input', validateCurrentPassword);
+    newPasswordInput.addEventListener('input', validateNewPassword);
+    confirmPasswordInput.addEventListener('input', validatePasswordConfirmation);
+    
+    document.addEventListener('DOMContentLoaded', function () {
+        // Tab switching functionality
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                const targetTab = this.getAttribute('data-tab');
+                // Remove active class from all buttons and contents
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+
+                // Add active class to clicked button and target content
+                this.classList.add('active');
+                document.getElementById(targetTab).classList.add('active');
+            });
+        });
+
+        // Toggle switch functionality
+        document.querySelectorAll('.toggle-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function () {
+                const label = this.nextElementSibling;
+                const span = label.querySelector('span');
+
+                if (this.checked) {
+                    span.style.transform = 'translateX(1.5rem)';
+                } else {
+                    span.style.transform = 'translateX(0)';
+                }
+            });
+        });
+
+        // Initialize toggle switches
+        document.querySelectorAll('.toggle-checkbox').forEach(checkbox => {
+            if (checkbox.checked) {
+                const span = checkbox.nextElementSibling.querySelector('span');
+                span.style.transform = 'translateX(1.5rem)';
+            }
+        });
+    });
+</script>
+<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.2.0/bcrypt.min.js" integrity="sha512-BJZhA/ftU3DVJvbBMWZwp7hXc49RJHq0xH81tTgLlG16/OkDq7VbNX6nUnx+QY4bBZkXtJoG0b0qihuia64X0w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script is:inline define:vars={{key:import.meta.env.API_SECURITY_KEY, APIUrl : getAPIPath(), imagePath : getImageBasePath()}}>
+    
+    let fileType;
+    let isImageRemoved = false;
+    let base64String;
+    // Get DOM elements
+    const avatarImg = document.getElementById("avatarImg");
+    const avatarUpload = document.getElementById("avatar-upload");
+    const removePhotoBtn = document.getElementById("remove-photo");
+    
+    // Default avatar URL
+    const defaultAvatar = "/assets/images/user2.png";
+    
+    // Handle file selection
+    async function handleFileSelect(file) {
+        if (!file || !file.type.match('image.*')) {
+            toastSystem.show({
+                type: 'error',
+                title: 'Unsupported file type',
+                message: "Please select a valid image file",
+                duration: 6000
+            });
+            return;
+        }
+        
+        const reader = new FileReader();
+        
+        fileType = (file.name.split(".")[file.name.split(".").length - 1]);
+        base64String = await imageFileToBase64(file);
+
+        reader.onload = function(e) {
+            avatarImg.src = e.target.result;
+        };
+        
+        reader.readAsDataURL(file);
+    }
+    
+    // Converting Image To Base64
+    function imageFileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onload = () => {
+                resolve(reader.result);
+            };
+
+            reader.onerror = (error) => {
+                reject(error);
+            };
+
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // Event listeners for file inputs
+    avatarUpload.addEventListener('change', function(e) {
+        if (this.files && this.files[0]) {
+            handleFileSelect(this.files[0]);
+        }
+    });
+    
+    // Remove photo button
+    removePhotoBtn.addEventListener('click', function() {
+        avatarImg.src = defaultAvatar;
+        toastSystem.show({
+            type: 'success',
+            title: 'Picture Removed',
+            message: "Profile picture removed. Make sure save the changes",
+            duration: 6000
+        });
+        
+        isImageRemoved = true;
+    });
+
+    let userid = document.getElementById("userid");
+    let userFullname = document.getElementById("userFullname");
+    let userEmailAddress = document.getElementById("userEmailAddress");
+    
+    // Function to fetch users from API
+    async function fetchUser(id) {
+        try {
+            // Replace with your actual API endpoint
+            const response = await fetch(APIUrl + `users/${id}`, {
+                method: "GET",
+                headers: {
+                    'Content-Type': 'application/json',
+                    "origin" : "http://localhost:4321",
+                    // "x-api-key" : key
+                },
+            });
+            const user = await response.json();
+            console.log(user);
+
+            correctPassword = user.password;
+            avatarImg.src = imagePath + user.picFile
+            userid.value = user.username
+            userFullname.value = user.fullname
+            userEmailAddress.value = user.email
+            userDesignation.value = user.designation
+            userBioDescription.value = user.description
+
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            document.getElementById('loading-row').innerHTML = `
+                <td colspan="5" class="px-4 py-4 text-center text-red-600">
+                    Error loading users. Please try again.
+                </td>
+            `;
+        }
+    }
+
+    // Update User Data
+    async function updateUser(id, data) {
+        try {
+
+            const formDataObj = {};
+            data.forEach((value, key) => (formDataObj[key] = value));
+            
+            console.log(formDataObj);
+
+            // Replace with your actual API endpoint
+            const response = await fetch(APIUrl + `users/update/${id}`, {
+                method: "PUT",
+                headers: {
+                    'Content-Type': 'application/json',
+                    "origin" : "http://localhost:4321",
+                    // "x-api-key" : key
+                },
+                body : JSON.stringify(formDataObj)
+            });
+            const users = await response.json();
+            console.log(users);
+            
+            debugger
+            if (response.ok && response.status === 200) {
+                return "success"
+            } else {
+                return "failed"
+            }
+
+        } catch (error) {
+            console.error('Error while updating user:', error);
+        }
+    }
+
+    // Update User Password
+    async function updateUserPassword(id, data) {
+        try {
+
+            const formDataObj = {};
+            data.forEach((value, key) => (formDataObj[key] = value));
+            
+            console.log(formDataObj);
+
+            // Replace with your actual API endpoint
+            const response = await fetch(APIUrl + `auth/change-password/${id}`, {
+                method: "PATCH",
+                headers: {
+                    'Content-Type': 'application/json',
+                    "origin" : "http://localhost:4321",
+                    // "x-api-key" : key
+                },
+                body : JSON.stringify(formDataObj)
+            });
+            const users = await response.json();
+            
+            if (response.ok && response.status === 200) {
+                return "success"
+            } else {
+                return "failed"
+            }
+
+        } catch (error) {
+            console.error('Error while updating user:', error);
+        }
+    }
+
+    function getCookie(cname) {
+        let name = cname + "=";
+        let decodedCookie = decodeURIComponent(document.cookie);
+        let ca = decodedCookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) == ' ') {
+                c = c.substring(1);
+            }
+            if (c.indexOf(name) == 0) {
+                return c.substring(name.length, c.length);
+            }
+        }
+        return "";
+    }
+
+    // Save Profile button and Saving Data
+    document.getElementById('save-settings').addEventListener('click', function () {
+        // In a real application, you would collect all form data and send to server
+        // const activeTab = document.querySelector('.tab-button.active').getAttribute('data-tab');
+        // alert(`Settings for ${activeTab} have been saved successfully!`);
+
+        const form = document.getElementById('profile-form');
+        const formData = new FormData(form);
+        if(fileType)
+            formData.append("fileType", fileType);
+        if(isImageRemoved)
+            formData.append("removeImage", true);
+        if(base64String)
+            formData.append("imageBase64", base64String);
+
+        showLoadingModal()
+        let originalText = "";
+        setTimeout(() => {
+            updateUser(getCookie("admin"), formData).then(resp => {
+                if (resp === 'success'){
+                    toastSystem.show({
+                        type: 'success',
+                        title: 'Data updated',
+                        message: `Profile information updated successfully`,
+                        duration: 6000
+                    });
+                }
+                else{
+                    toastSystem.show({
+                        type: 'error',
+                        title: 'Error occured',
+                        message: `An error occured while updating the user`,
+                        duration: 6000
+                    });
+                }
+                isImageRemoved = false;
+            });
+
+            // Show loading state
+            originalText = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving...';
+            this.disabled = true;
+            modalSystem.closeAll();
+        }, 1500);
+
+        setTimeout(() => {
+            this.innerHTML = originalText;
+            this.disabled = false;
+        }, 1500);
+    });
+
+    // Form submission
+    passwordForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const isCurrentPasswordValid = await validateCurrentPassword();
+        const isNewPasswordValid = validateNewPassword();
+        const isPasswordConfirmed = validatePasswordConfirmation();
+        
+        if (isCurrentPasswordValid && isNewPasswordValid && isPasswordConfirmed) {
+            const formData = new FormData(this);
+
+            showLoadingModal();
+            setTimeout(() => {
+                updateUserPassword(getCookie("admin"), formData).then(resp => {
+                    if (resp === 'success'){
+                        toastSystem.show({
+                            type: 'success',
+                            title: 'Password Modified',
+                            message: "Password updated successfully!",
+                            duration: 6000
+                        });
+
+                        fetchUser(getCookie("admin"))
+                    }
+                    else{
+                        toastSystem.show({
+                            type: 'error',
+                            title: 'Error occured',
+                            message: `An error occured while updating the user`,
+                            duration: 6000
+                        });
+                    }
+                });
+                modalSystem.closeAll();
+            }, 1500);
+
+            // Reset form
+            passwordForm.reset();
+            
+            // Reset UI
+            updatePasswordStrength(0);
+            
+            // Reset requirement indicators
+            [reqLength, reqUppercase, reqLowercase, reqSpecial].forEach(el => {
+                el.classList.remove('valid');
+                el.classList.add('invalid');
+                el.querySelector('i').classList.remove('fa-check', 'text-green-500');
+                el.querySelector('i').classList.add('fa-times', 'text-red-500');
+            });
+        } else {
+            toastSystem.show({
+                type: 'error',
+                title: 'Form submission error',
+                message: "Please fix the errors before submitting",
+                duration: 6000
+            });
+        }
+    });
+
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+        fetchUser(getCookie("admin"))
+    });
+</script>

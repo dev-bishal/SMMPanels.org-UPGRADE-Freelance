@@ -1,0 +1,228 @@
+---
+
+---
+<style is:inline>
+    .rotate-opp{
+        rotate: 180deg;
+    }
+</style>
+<span class="hidden rotate-180"></span>
+<div class="sidebar flex flex-col justify-between bg-blue-800 text-white w-64 py-7 px-2 absolute inset-y-0 left-0 transform md:relative md:translate-x-0"
+    id="sidebar">
+    <div class="top space-y-6">
+        <!-- Logo -->
+        <div class="text-white flex items-center space-x-2 px-4">
+            <i class="fas fa-tachometer-alt fa-2x"></i>
+            <span class="text-2xl font-extrabold">AdminPanel</span>
+        </div>
+    
+        <!-- Navigation -->
+        <nav class="space-y-1">
+            <a href="/admin/"
+                class="py-2.5 px-4 rounded transition duration-200 hover:bg-blue-700 hover:text-white flex items-center nav-link"
+                data-page="dashboard" aria-current="page">
+                <i class="fas fa-home mr-2"></i>
+                Dashboard
+            </a>
+    
+            <!-- Panels with Submenu -->
+            <div class="panel-menu">
+                <a href="/admin/panel"
+                    class="py-2.5 px-4 rounded transition duration-200 hover:bg-blue-700 hover:text-white flex items-center justify-between nav-link has-submenu"
+                    data-page="panel" id="panel-main-link">
+                    <div class="flex items-center">
+                        <i class="fa-solid fa-newspaper mr-2"></i>
+                        Panels
+                    </div>
+                    <i class="fas fa-chevron-down text-xs transition-transform duration-200" id="panel-chevron"></i>
+                </a>
+    
+                <!-- Submenu -->
+                <div class="panel-submenu ml-4 mt-1 space-y-1 hidden">
+                    <a href="/admin/panels"
+                        class="py-2 px-4 rounded transition duration-200 hover:bg-blue-700 hover:text-white flex items-center text-sm submenu-link"
+                        data-page="panel-all">
+                        <i class="fas fa-list mr-2"></i>
+                        All Panels
+                    </a>
+                    <a href="/admin/panels/editor"
+                        class="py-2 px-4 rounded transition duration-200 hover:bg-blue-700 hover:text-white flex items-center text-sm submenu-link"
+                        data-page="panel-new" aria-current="page">
+                        <i class="fas fa-plus mr-2"></i>
+                        Add New Panel
+                    </a>
+                </div>
+            </div>
+            <!-- Pages with Submenu -->
+            <div class="page-menu">
+                <a href="/admin/pages"
+                    class="py-2.5 px-4 rounded transition duration-200 hover:bg-blue-700 hover:text-white flex items-center justify-between nav-link has-submenu"
+                    data-page="page" id="page-main-link">
+                    <div class="flex items-center">
+                        <i class="fa-regular fa-pen-to-square mr-2"></i>
+                        Pages
+                    </div>
+                    <i class="fas fa-chevron-down text-xs transition-transform duration-200" id="page-chevron"></i>
+                </a>
+    
+                <!-- Submenu -->
+                <div class="page-submenu ml-4 mt-1 space-y-1 hidden" id="page-submenu">
+                    <a href="/admin/pages"
+                        class="py-2 px-4 rounded transition duration-200 hover:bg-blue-700 hover:text-white flex items-center text-sm submenu-link"
+                        data-page="page-all">
+                        <i class="fas fa-list mr-2"></i>
+                        All Pages
+                    </a>
+                    <a href="/admin/pages/editor"
+                        class="py-2 px-4 rounded transition duration-200 hover:bg-blue-700 hover:text-white flex items-center text-sm submenu-link"
+                        data-page="page-new" aria-current="page">
+                        <i class="fas fa-plus mr-2"></i>
+                        Add New page
+                    </a>
+                </div>
+            </div>
+            <a href="/admin/services"
+                class="py-2.5 px-4 rounded transition duration-200 hover:bg-blue-700 hover:text-white flex items-center nav-link"
+                data-page="Services">
+                <i class="fa-light fa-browser mr-2"></i>
+                Services
+            </a>
+            <a href="/admin/payment-options"
+                class="py-2.5 px-4 rounded transition duration-200 hover:bg-blue-700 hover:text-white flex items-center nav-link"
+                data-page="PaymentOptions">
+                <i class="fa-solid fa-money-bill-wave mr-2"></i>
+                Payment Options
+            </a>
+            <a href="/admin/messages"
+                class="py-2.5 px-4 rounded transition duration-200 hover:bg-blue-700 hover:text-white flex items-center nav-link"
+                data-page="messages">
+                <i class="fa-solid fa-message mr-2"></i>
+                Messages
+            </a>
+            <a href="/admin/users"
+                class="py-2.5 px-4 rounded transition duration-200 hover:bg-blue-700 hover:text-white flex items-center nav-link"
+                data-page="users">
+                <i class="fas fa-users mr-2"></i>
+                Users
+            </a>
+            <a href="/admin/settings"
+                class="py-2.5 px-4 rounded transition duration-200 hover:bg-blue-700 hover:text-white flex items-center nav-link"
+                data-page="settings">
+                <i class="fas fa-cog mr-2"></i>
+                Settings
+            </a>
+            <a href="/admin/others"
+                class="hidden py-2.5 px-4 rounded transition duration-200 hover:bg-blue-700 hover:text-white flex items-center nav-link"
+                data-page="settings">
+                <i class="fa-solid fa-face-smile-wink mr-2"></i>
+                Others
+            </a>
+        </nav>
+    </div>
+
+    <div class="bg-blue-700 rounded-xl shadow-sm p-6">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                <i class="fa-solid fa-code text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <p class="text-gray-200">Made by</p>
+                <a href="https://bishalbiswas.dev/" class="text-xl font-bold">Bishal Biswas</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script is:inline>
+    document.addEventListener('DOMContentLoaded', function () {
+        let currentSubmenu, currentChevron;
+        // Toggle panel submenu
+        const hasSubMenu = document.querySelectorAll('.has-submenu');
+
+        hasSubMenu.forEach(headSubMenu => {
+            const isSubmenu = headSubMenu.nextElementSibling;
+            const isChevron = headSubMenu.children[1];
+
+            if (headSubMenu && isSubmenu) {
+                headSubMenu.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    isSubmenu.classList.toggle('hidden');
+                    isChevron.classList.toggle('rotate-180');
+                });
+            }
+        });
+
+        // Set active page based on current URL or data attribute
+        function setActivePage() {
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.nav-link');
+            const submenuLinks = document.querySelectorAll('.submenu-link');
+
+            // Remove all active states first
+            navLinks.forEach(link => {
+                link.classList.remove('bg-blue-700', 'text-white');
+                link.removeAttribute('aria-current');
+            });
+
+            submenuLinks.forEach(link => {
+                link.classList.remove('bg-blue-700', 'text-white');
+                link.removeAttribute('aria-current');
+            });
+
+            // Check main navigation links
+            navLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href.replaceAll("", "") === currentPath.replaceAll("", "") || currentPath.replaceAll("", "").startsWith(href.replaceAll("", "")) && href.replaceAll("", "") !== '/admin/') {
+                    link.classList.add('bg-blue-700', 'text-white');
+                    link.setAttribute('aria-current', 'page');
+
+                    currentSubmenu = link.nextElementSibling;
+                    currentChevron = link.children[1];
+                    /* // If it's the panel page, open the submenu
+                    if (href.replaceAll("", "") === '/panel' || currentPath.startsWith('/panel')) {
+                        currentSubmenu.classList.remove('hidden');
+                        currentChevron.classList.toggle('rotate-180');
+                    } */
+                }
+            });
+
+            // Check submenu links
+            submenuLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href === currentPath) {
+                    link.classList.add('bg-blue-700', 'text-white');
+                    link.setAttribute('aria-current', 'page');
+
+                    // Ensure panel submenu is open when a subpage is active
+                    currentSubmenu.classList.remove('hidden');
+                    currentChevron.classList.add('rotate-180');
+                }
+            });
+
+            // Fallback: check data-page attribute
+            if (currentPath === '/') {
+                const dashboardLink = document.querySelector('[data-page="dashboard"]');
+                if (dashboardLink) {
+                    dashboardLink.classList.add('bg-blue-700', 'text-white');
+                    dashboardLink.setAttribute('aria-current', 'page');
+                }
+            }
+        }
+
+        // Initialize active page
+        setActivePage();
+    });
+</script>
+
+<style is:inline>
+
+    /* Smooth transitions for submenu */
+    .panel-submenu {
+        transition: all 0.3s ease-in-out;
+    }
+
+    /* Ensure proper spacing for submenu items */
+    .submenu-link {
+        padding-left: 2rem;
+    }
+</style>

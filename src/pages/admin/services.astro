@@ -1,0 +1,665 @@
+---
+import ColorPicker from "../../admin-components/ColorPicker.astro";
+import { isAdminLoggedIn } from "../../data/admin-utils";
+import { getAPIPath, getImageBasePath } from "../../data/utils";
+import AdminLayout from "../../layouts/AdminLayout.astro";
+
+
+const adminCookie = Astro.cookies.get("admin");
+
+//#region Authentication
+if(!isAdminLoggedIn(adminCookie)){
+    return Astro.redirect("/admin/login");
+}
+
+const response = await fetch(getAPIPath() + `auth/validate`, {
+	method: "POST",
+    body : JSON.stringify({ userId : adminCookie?.value}),
+    headers : {
+        'Content-Type': 'application/json',
+        "origin" : "http://localhost:4321",
+        "x-api-key" : import.meta.env.API_SECURITY_KEY
+    }
+}).then(res => res.json());
+
+// console.log(response);
+
+if(response.status !== 200 && response.isValid !== true){
+    return Astro.redirect("/admin/login");
+}
+//#endregion
+---
+<style is:inline>
+
+    .chip {
+        transition: all 0.3s ease;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .chip:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .chip-enter {
+        animation: slideIn 0.3s ease-out;
+    }
+
+    .chip-exit {
+        animation: slideOut 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @keyframes slideOut {
+        from {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        to {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+    }
+
+    .form-card {
+        transition: all 0.3s ease;
+    }
+
+    .form-card:hover {
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .input-group {
+        transition: all 0.3s ease;
+    }
+
+    .input-group:focus-within {
+        transform: translateY(-1px);
+    }
+
+    .category-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        display: inline-block;
+        margin-right: 8px;
+    }
+
+    .empty-state {
+        transition: all 0.3s ease;
+    }
+
+    .empty-state:hover {
+        transform: scale(1.02);
+    }
+</style>
+<style is:inline>
+    .ce-header {
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    .ce-header h1 {
+        font-size: 2.25rem;
+    }
+
+    .ce-header h2 {
+        font-size: 1.875rem;
+    }
+
+    .ce-header h3 {
+        font-size: 1.5rem;
+    }
+
+    .tag-chip {
+        transition: all 0.2s;
+    }
+
+    .tag-chip:hover {
+        background-color: #3b82f6;
+        color: white;
+    }
+
+    .image-upload-container {
+        transition: all 0.3s;
+    }
+
+    .image-upload-container:hover {
+        border-color: #3b82f6;
+    }
+
+    .editor-container {
+        min-height: 400px;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+</style>
+
+<AdminLayout PageTitle="Services" PageHeader="Services" UserName={response.user.fullname || response.user.username} avatarImagePath={getImageBasePath() + response.user.ProfilePic} emailAdd = {response.user.email}>
+
+    <div class="main-container min-h-screen">
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Side - Form -->
+                <div>
+                    <div class="form-card bg-white rounded-xl shadow-sm p-6 sticky top-8">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-6">Add New Service</h2>
+
+                        <form id="item-form" class="space-y-6">
+                            <!-- Service Logo -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h3 class="text-lg font-medium text-gray-900 mb-4">Service Logo</h3>                            
+
+                                <div
+                                    class="image-upload-container border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-[#3b82f6]">
+                                    <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                    <p class="text-sm text-gray-600">Click to upload or drag and drop</p>
+                                    <p class="text-xs text-gray-500">SVG, PNG, JPG or GIF (max. 5MB)</p>
+                                    <input type="file" class="hidden" id="serviceLogoUpload" name="serviceLogoUpload">
+                                </div>                          
+
+                                <div id="image-preview" class="hidden mt-4">
+                                    <img src="" alt="Service Logo preview" class="rounded-lg max-h-48 mx-auto">
+                                    <button type="button" class="mt-2 text-red-600 text-sm">
+                                        <i class="fas fa-trash mr-1"></i> Remove image
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-x-2">
+                                <!-- Name Input -->
+                                <div class="input-group w-[35%]">
+                                    <label class="block text-gray-700 text-sm font-medium mb-2">Service Name</label>
+                                    <input type="text" id="serviceTitle" name="serviceTitle"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Enter Service name" required>
+                                </div>
+    
+                                <!-- Slug Input -->
+                                <div class="input-group w-[35%]">
+                                    <label class="block text-gray-700 text-sm font-medium mb-2">Slug</label>
+                                    <input type="text" id="service-slug" disabled
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Enter Service Slug" required>
+                                </div>
+
+                                <!-- Color Picker -->
+                                <ColorPicker/>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="flex space-x-3 pt-4">
+                                <button id="resetBtn" type="reset"
+                                    class="flex-1 bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+                                    <i class="fas fa-redo mr-2"></i> Reset Form
+                                </button>
+                                <button id="submitBtn" type="submit"
+                                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center">
+                                    <i class="fas fa-plus-circle mr-2"></i> <span>Add Item</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Right Side - Chips Display -->
+                <div>
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <!-- Header -->
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h2 class="text-xl font-semibold text-gray-800">Saved Services</h2>
+                                <p class="text-gray-600 text-sm mt-1">
+                                    <span id="items-count"></span> items stored
+                                </p>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <div class="relative">
+                                    <input type="text" id="search-items" placeholder="Search items..."
+                                        class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm w-48">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-search text-gray-400"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chips Container -->
+                        <div id="chips-container" class="min-h-[400px]">
+                            <!-- Chips will be dynamically added here -->
+                            <div class="flex flex-wrap gap-3" id="chips-list">
+                                <!-- Sample chips will be added by JavaScript -->
+                            </div>
+
+                            <!-- Empty State -->
+                            <div id="empty-state" class="empty-state hidden text-center py-12">
+                                <div
+                                    class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-tags text-gray-400 text-3xl"></i>
+                                </div>
+                                <h3 class="text-lg font-semibold text-gray-800 mb-2">No items yet</h3>
+                                <p class="text-gray-600 mb-4">Start by adding your first item using the form on the
+                                    left.</p>
+                                <button
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center">
+                                    <i class="fas fa-plus mr-2"></i> Add First Item
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+
+</AdminLayout>
+
+<script is:inline define:vars={{key:import.meta.env.API_SECURITY_KEY, APIUrl : getAPIPath(), imagePath : getImageBasePath()}}>
+    let base64String;
+    let isEditMode = "";
+    let fileType;
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', function () {
+        // Slug
+        document.getElementById("serviceTitle").addEventListener("input", function (e) {
+            // Get current value, remove all spaces, convert to lowercase
+            document.getElementById("service-slug").value = this.value.replace(/\s+/g, '').toLowerCase();
+        });
+
+        // Fetching Services
+        let Services = [];
+        showLoadingModal();
+        fetchData();
+        modalSystem.closeAll();
+
+        // Form submission
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const formDataObj = {};
+            formData.append("imageBase64", base64String);
+            formData.forEach((value, key) => (formDataObj[key] = value));
+
+            formDataObj.fileType = fileType;
+            // Make request to upload
+            try {
+
+                debugger
+                showLoadingModal();
+                let requestType;
+                isEditMode ? requestType = "PUT" : requestType = "POST";
+
+                const response = await fetch(APIUrl + "services/" + isEditMode , {
+                    method: requestType,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        "origin" : "http://localhost:4321",
+                        // "x-api-key" : key,
+                    },
+                    body : JSON.stringify(formDataObj),
+                });
+            
+                const data = await response.json();
+                console.log("API Response:", data);
+            
+                if (response.ok && response.status === 201) {
+                    toastSystem.show({
+                        type: 'success',
+                        title: 'Service Saved',
+                        message: `New Service Added successfully.`,
+                        duration: 6000
+                    });
+                    clearContent();
+                    fetchData();
+                } else {
+                    // alert("Login failed: " + data.message);
+                    toastSystem.show({
+                        type: 'error',
+                        title: 'Error occured',
+                        message: `An error occured while saving service`,
+                        duration: 6000
+                    });
+                }
+                isEditMode = "";
+            } catch (error) {
+                // alert("Login failed: " + data.message);
+                toastSystem.show({
+                    type: 'error',
+                    title: 'Error occured',
+                    message: `An error occured while saving service`,
+                    duration: 6000
+                });
+            }
+
+            modalSystem.closeAll();
+            form.reset();
+            imagePreview.querySelector('button').click();            
+
+            // Show success feedback
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Added!';
+            submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            submitBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            }, 2000);
+        });
+
+        // Search and filter
+        searchInput.addEventListener('input', filterItems);
+
+        // Remove chip
+        chipsList.addEventListener('click', function (e) {
+            const chip = e.target.closest('.chip');
+            if (e.target.closest('.remove-chip')) {
+                const id = chip.getAttribute('data-delete-id');
+                
+                // Show Delete modal if Yes proceed else return
+                showDeleteModal().then(resp => {
+                    if (resp === 'Delete Clicked') {
+                        // Perform delete operation
+                        deleteData(id)
+                        console.log('Deleting item...');
+                    }
+                });
+                
+            }
+            else {
+                const id = chip.getAttribute('data-edit-id');
+                let data = items.filter((item) => item._id === id)[0];
+                document.getElementById("serviceTitle").value = data.serviceTitle;
+                document.getElementById("service-slug").value = data.serviceTitle.toLowerCase();
+                document.getElementById('serviceColor').value = data.serviceColor;
+                document.getElementById('hexValue').textContent = data.serviceColor;
+                imagePreviewImg.src = imagePath + data.serviceLogo;
+                imagePreview.classList.remove('hidden');
+                imageUploadContainer.classList.add('hidden');
+
+                console.log(data.textContent);
+                
+                let editorJsContent = {
+                    time: Date.now(),
+                    blocks: data.textContent
+                }
+                editor.isReady
+                .then(() => editor.render(editorJsContent))
+                .catch((err) => console.error("Render failed", err));
+                
+                isEditMode = id;
+                document.getElementById("submitBtn").querySelector("span").textContent = "Update Item";
+            }
+        });
+
+        // Add first item button in empty state
+        emptyState.querySelector('button').addEventListener('click', function () {
+            document.getElementById('item-name').focus();
+        });
+    });
+
+    // Sample initial data
+    let items = [];
+
+    // DOM Elements
+    const form = document.getElementById('item-form');
+    const chipsList = document.getElementById('chips-list');
+    const emptyState = document.getElementById('empty-state');
+    const itemsCount = document.getElementById('items-count');
+    const searchInput = document.getElementById('search-items');
+
+    // Converting Image To Base64
+    function imageFileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onload = () => {
+                resolve(reader.result);
+            };
+
+            reader.onerror = (error) => {
+                reject(error);
+            };
+
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // Render chips
+    function renderChips(filteredItems = items) {
+        chipsList.innerHTML = '';
+
+        if (filteredItems.length === 0) {
+            emptyState.classList.remove('hidden');
+            chipsList.classList.add('hidden');
+        } else {
+            emptyState.classList.add('hidden');
+            chipsList.classList.remove('hidden');
+
+            filteredItems.forEach(item => {
+                const chip = createChipElement(item);
+                chipsList.appendChild(chip);
+            });
+        }
+
+        updateItemsCount();
+    }
+
+    // Create chip element
+    function createChipElement(item) {
+        const chip = document.createElement('div');
+        chip.className = `chip inline-flex items-center px-4 py-2 rounded-full border bg-blue-100 text-blue-800 border-blue-200 cursor-pointer group`;
+        chip.setAttribute('data-edit-id', item._id);
+        chip.setAttribute('data-delete-id', item._id);
+
+        chip.innerHTML = `
+            <img class="size-[30px] rounded-full mr-1 object-contain" src="${imagePath + item.serviceLogo}">    
+            <span class="font-medium text-sm">${item.serviceTitle}</span>
+            ${item.serviceColor ? `
+                <div class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity" title="color: ${item.serviceColor}">
+                    <i class="fas fa-info-circle text-gray-500 text-xs"></i>
+                </div>
+            ` : ''}
+            <button class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 hover:text-gray-700 remove-chip">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        `;
+
+        return chip;
+    }
+
+    // Update items count
+    function updateItemsCount() {
+        itemsCount.textContent = items.length;
+    }
+
+    // Filter items
+    function filterItems() {
+        const searchTerm = searchInput.value.toLowerCase();
+
+        let filteredItems = items;
+
+        // Filter by search term
+        if (searchTerm) {
+            filteredItems = filteredItems.filter(item =>
+                item.serviceTitle.toLowerCase().includes(searchTerm) ||
+                (item.serviceColor && item.serviceColor.toLowerCase().includes(searchTerm))
+            );
+        }
+
+        renderChips(filteredItems);
+    }
+
+    // Remove item
+    function removeItem(id) {
+        const chip = document.querySelector(`[data-delete-id="${id}"]`);
+        if (chip) {
+            chip.classList.add('chip-exit');
+            setTimeout(() => {
+                items = items.filter(item => item.xata_id !== id);
+                renderChips();
+            }, 300);
+        }
+    }
+
+    // Fetching Services Request
+    async function fetchData() {
+        try {
+            const response = await fetch(APIUrl + "services", {
+                method: "GET",
+                headers: {
+                    'Content-Type': 'application/json',
+                    "origin" : "http://localhost:4321",
+                    // "x-api-key" : key
+                },
+            });
+        
+            const data = await response.json();
+            items = data;
+            console.log("API Response:", items);
+
+            // Initial render
+            renderChips();
+        
+            if (response.ok && response.status === 200) {
+                
+            } else {
+                // alert("Login failed: " + data.message);
+                toastSystem.show({
+                    type: 'error',
+                    title: 'Error occured',
+                    message: `An error occured while fetching services`,
+                    duration: 6000
+                });
+            }
+        } catch (error) {
+            // alert("Login failed: " + data.message);
+            toastSystem.show({
+                type: 'error',
+                title: 'Error occured',
+                message: `An error occured while fetching services`,
+                duration: 6000
+            });
+        }
+    }
+    // Deleting Service Request
+    async function deleteData(id) {
+        
+        showLoadingModal();
+        try {
+            const response = await fetch(APIUrl + `services/${id}`, {
+                method: "DELETE",
+                headers: {
+                    'Content-Type': 'application/json',
+                    "origin" : "http://localhost:4321",
+                    // "x-api-key" : key
+                },
+            });
+        
+            const data = await response.json();
+            console.log("Delete API Response:", data);
+        
+            if (response.ok && response.status === 200) {
+                removeItem(id);
+                toastSystem.show({
+                    type: 'success',
+                    title: 'Data Deleted',
+                    message: `Service delete successfully`,
+                    duration: 6000
+                });
+                fetchData();
+            } else {
+                // alert("Login failed: " + data.message);
+                toastSystem.show({
+                    type: 'error',
+                    title: 'Error occured',
+                    message: `An error occured while fetching services`,
+                    duration: 6000
+                });
+            }
+        } catch (error) {
+            // alert("Login failed: " + data.message);
+            toastSystem.show({
+                type: 'error',
+                title: 'Error occured',
+                message: `An error occured while fetching services`,
+                duration: 6000
+            });
+        }
+        modalSystem.closeAll();
+    }
+
+    // Service Logo upload preview
+    const imageUpload = document.getElementById('serviceLogoUpload');
+    const imageUploadContainer = document.querySelector('.image-upload-container');
+    const imagePreview = document.getElementById('image-preview');
+    const imagePreviewImg = imagePreview.querySelector('img');
+
+    imageUploadContainer.addEventListener('click', function () {
+        imageUpload.click();
+    });
+
+    imageUpload.addEventListener('change', async function () {
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+
+            fileType = (this.files[0].name.split(".")[this.files[0].name.split(".").length - 1]);
+            
+            base64String = await imageFileToBase64(this.files[0]);
+            reader.onload = function (e) {
+                imagePreviewImg.src = e.target.result;
+                imagePreview.classList.remove('hidden');
+                imageUploadContainer.classList.add('hidden');
+            };
+
+            reader.readAsDataURL(this.files[0]);
+        }
+    });
+
+    // Remove image button
+    imagePreview.querySelector('button').addEventListener('click', function () {
+        imagePreview.classList.add('hidden');
+        imageUploadContainer.classList.remove('hidden');
+        imageUpload.value = '';
+    });
+    
+    // Form Reset
+    document.getElementById("resetBtn").addEventListener("click", ()=>{
+        imagePreview.querySelector('button').click();
+        document.getElementById('hexValue').textContent = "#000000";
+        isEditMode = "";
+        document.getElementById("submitBtn").querySelector("span").textContent = "Add Item";
+    })
+</script>

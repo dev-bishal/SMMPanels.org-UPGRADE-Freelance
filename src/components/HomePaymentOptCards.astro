@@ -1,0 +1,59 @@
+---
+import { metaData } from '../pages/data';
+import { metaDataEs } from '../pages/es/data';
+import { metaDataFr } from '../pages/fr/data';
+import { metaDataPt } from '../pages/pt/data';
+import { metaDataRu } from '../pages/ru/data';
+import { metaDataZh } from '../pages/zh/data';
+import { metaDataHi } from '../pages/hi/data';
+import { metaDataBn } from "../pages/bn/data";
+import { metaDataUr } from "../pages/ur/data";
+import { metaDataId } from "../pages/id/data";
+import { getImageBasePath } from '../data/utils';
+
+interface Props {
+    payment: {
+        id: string,
+        paymentLogo: string,
+        paymentOptTitle: string,
+    },
+    count: number,
+    index: number,
+    lang ?: string;
+}
+
+const { payment, index, count, lang="en" } = Astro.props;
+
+let contentPath;
+if(lang == "en") contentPath = metaData;
+else if(lang == "ru") contentPath = metaDataRu;
+else if(lang == "zh") contentPath = metaDataZh
+else if(lang == "es") contentPath = metaDataEs
+else if(lang == "fr") contentPath = metaDataFr
+else if(lang == "pt") contentPath = metaDataPt
+else if(lang == "hi") contentPath = metaDataHi
+else if(lang == "bn") contentPath = metaDataBn
+else if(lang == "ur") contentPath = metaDataUr
+else if(lang == "id") contentPath = metaDataId
+
+let langDirectory = "";
+if(lang != "en"){
+    langDirectory = "/"+ lang
+}
+
+---
+
+<li class="flex gap-1 items-center">
+
+    <span class="w-1/12 dark:text-white">{index+1}.</span>
+    <div class="flex gap-3 mb-3 w-11/12">
+        <img src={getImageBasePath() + payment.paymentLogo} alt={payment.paymentOptTitle + "Payment Option"} class="hover:brightness-90 cursor-pointer size-[60px] bg-[#dedede] object-contain rounded-full">
+        <div class="flex-1 flex justify-between">
+            <span>
+                <h3 class="text-base text-gray-600 dark:text-white">{payment.paymentOptTitle}</h3>
+                <p class="text-xs text-black dark:text-[#9bdd75]">{contentPath?.text[9]} {count} Panels</p>
+            </span>
+            <a class="hover:bg-[#69b63d] bg-[#9bdd75] rounded-full gap-2 flex items-center px-3 py-2 size-fit" href={ langDirectory + "/payment-options/" + payment.paymentOptTitle.toLowerCase().replaceAll(" ", "-").replaceAll("/", "-")}>{contentPath?.text[10]}</a>
+        </div>
+    </div>
+</li>

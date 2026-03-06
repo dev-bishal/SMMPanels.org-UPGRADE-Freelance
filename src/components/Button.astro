@@ -1,0 +1,17 @@
+---
+interface Props {
+    url : string,
+    text : string,
+    iconClass : string
+}
+
+const {url, text, iconClass} = Astro.props;
+---
+
+<a class="hover:bg-[#69b63d] bg-[#9bdd75] group text-black rounded-full gap-2 flex items-center px-3 py-2 w-fit" href={url}>
+    {text} 
+    {
+        iconClass && 
+        <i class="group-hover:pl-1" class:list={[iconClass]}></i>
+    }
+</a>

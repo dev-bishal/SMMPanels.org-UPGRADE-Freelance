@@ -1,0 +1,100 @@
+---
+import MainLayout from "../../../layouts/MainLayout.astro";
+import coverImage from "../../../assets/cover.png";
+import iconImage from "../../../assets/icons.png";
+
+import {getAPIPath, mainData, optimizeImageUrl} from "../../../data/utils"
+import HomePanelCard from "../../../components/HomePanelCard.astro";
+import ArticlePagination from "../../../components/ArticlePagination.astro";
+import HeaderBanner from "../../../components/HeaderBanner.astro";
+export const prerender = true;
+
+export async function getStaticPaths({ paginate } : {paginate : any}) {
+    const responsePanels : panelStructure[] = await fetch(getAPIPath() + "panels").then(Response => Response.json());
+
+    return paginate(responsePanels.reverse(), { pageSize: 15 });
+}
+
+interface panelStructure {
+	panelFeaturedImage: {
+		url: string;
+	};
+	id: string;
+	panelAPIKey: string;
+	panelAPILink: string;
+	panelSlug: string;
+	panelTextDescription: string;
+	panelTitle: string;
+	panelTotalServices: number;
+	rating: number;
+	panelWebsiteURL: string;
+}
+
+interface Props {
+    page: {
+        data: panelStructure[];
+        start: number;
+        end: number;
+        size: number;
+        total: number;
+        currentPage: number;
+        lastPage: number;
+        url: {
+            current: string;
+            next: string;
+            prev: string;
+            first: string;
+            last: string;
+        };
+    };
+}
+
+const { page } = Astro.props;
+const { data: panelData, ...paginationData} = page;
+
+// importing language
+import { metaDataRu } from "../data";
+const allSiteFetch:any = await fetch(getAPIPath() + "siteSettings/" + import.meta.env.SITESETTINGSKEY).then(Response => Response.json());
+---
+
+<MainLayout 
+    siteTitle = {allSiteFetch.SiteTitle} 
+    lang={metaDataRu.language} 
+    title={allSiteFetch.SiteTitle + " - All Panels"} 
+    metaDescription="Discover the best SMM Panels, checkout their services & offers and find the right SMM Panel for you! Bring your brand to the next level by buying the best signals, likes, followers & much more!" 
+    pageType="page">
+
+    <HeaderBanner imgUrl={coverImage.src} iconImgUrl={iconImage.src} titleText={metaDataRu.text[27]} descriptionText={metaDataRu.text[28]} />
+
+    <div class="panels-container w-full">
+        <span class="text-base font-semibold text-white">{metaDataRu.text[29]} 👇</span>
+
+        <div class="wrapper text-white flex lg:justify-between md:justify-center items-center flex-wrap gap-4 gap-y-6 my-5">
+            {
+                page.data.map((panel: panelStructure, index:number) => (
+                    <HomePanelCard
+                        lang={metaDataRu.language}
+                        rating = {panel.rating}
+                        imgSrc = {panel.panelFeaturedImage == null ? "" : getImageBasePath
+() + panel.panelFeaturedImage }
+                        panelTitle={panel.panelTitle}
+                        panelUrl={panel.panelSlug}
+                    />
+                ))
+            }
+            <!-- allPanelServiceCount[0][responsePanels.length - (index + 1)] -->
+        </div>
+
+        <ArticlePagination lang={metaDataRu.language} {paginationData}>
+    </div>
+
+</MainLayout>
+
+<script is:inline>
+    let allThumbnailImg = document.querySelectorAll(".panelThumbnail");
+    allThumbnailImg.forEach(thumbnailImg => {
+        thumbnailImg.addEventListener("click", ()=>{
+          thumbnailImg.nextElementSibling.querySelector("a").click();
+        })
+    })
+</script>

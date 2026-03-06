@@ -1,0 +1,371 @@
+---
+
+---
+<style>
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        z-index: 50;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+        opacity: 1;
+    }
+
+    .modal {
+        background: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+        max-width: 100%;
+        position: relative;
+    }
+
+    .modal.active {
+        transform: scale(1);
+    }
+
+    .modal-sm {
+        max-width: 28rem;
+    }
+
+    .modal-md {
+        max-width: 32rem;
+    }
+
+    .modal-lg {
+        max-width: 48rem;
+    }
+
+    .modal-xl {
+        max-width: 64rem;
+    }
+
+    .modal-close {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: none;
+        border: none;
+        font-size: 1.25rem;
+        color: #6b7280;
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 0.25rem;
+    }
+
+    .modal-close:hover {
+        background-color: #f3f4f6;
+        color: #374151;
+    }
+
+    .modal-header {
+        padding: 1.5rem 1.5rem 0;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 0 1.5rem 1.5rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+    }
+
+    .modal-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 9999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+
+    .modal-icon.success {
+        background-color: #dcfce7;
+        color: #16a34a;
+    }
+
+    .modal-icon.error {
+        background-color: #fee2e2;
+        color: #dc2626;
+    }
+
+    .modal-icon.warning {
+        background-color: #fef3c7;
+        color: #d97706;
+    }
+
+    .modal-icon.info {
+        background-color: #dbeafe;
+        color: #2563eb;
+    }
+
+    .btn {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background-color: #3b82f6;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #2563eb;
+    }
+
+    .btn-danger {
+        background-color: #ef4444;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background-color: #dc2626;
+    }
+
+    .btn-outline {
+        background-color: white;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+
+    .btn-outline:hover {
+        background-color: #f9fafb;
+    }
+
+    .input-group {
+        margin-bottom: 1rem;
+    }
+
+    .input-label {
+        display: block;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.25rem;
+    }
+
+    .input-field {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .input-field:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .demo-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .demo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .demo-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        border: 1px solid #e5e7eb;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .demo-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .response-output {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 1rem;
+        font-family: monospace;
+        white-space: pre-wrap;
+        min-height: 60px;
+    }
+</style>
+<!-- Modal Header -->
+<header class="bg-white shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Modal System with Promise Responses</h1>
+                <p class="text-gray-600">Click on any modal type to test. The response will be displayed below.</p>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="demo-container">
+    
+    <div class="response-output" id="responseOutput">
+        No modal responses yet. Click a button above to test.
+    </div>
+
+    <div class="demo-grid">
+        <!-- Loading Modal -->
+        <div class="demo-card bg-white rounded-xl shadow-sm p-6" onclick="showLoadingModal()">
+            <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                <i class="fas fa-spinner text-gray-600 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">Loading Modal</h3>
+            <p class="text-gray-600 text-sm">Show loading state during operations</p>
+        </div>
+
+        <div class="demo-card" onclick="testModal('delete')">
+            <div class="flex items-center mb-3">
+                <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-trash text-red-600"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-800">Delete Modal</h3>
+            </div>
+            <p class="text-gray-600">Shows a confirmation dialog for destructive actions.</p>
+        </div>
+
+        <div class="demo-card" onclick="testModal('confirm')">
+            <div class="flex items-center mb-3">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-question-circle text-blue-600"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-800">Confirmation Modal</h3>
+            </div>
+            <p class="text-gray-600">Asks user to confirm an important action.</p>
+        </div>
+
+        <div class="demo-card" onclick="testModal('success')">
+            <div class="flex items-center mb-3">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-check text-green-600"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-800">Success Modal</h3>
+            </div>
+            <p class="text-gray-600">Shows a success message after an operation.</p>
+        </div>
+
+        <div class="demo-card" onclick="testModal('error')">
+            <div class="flex items-center mb-3">
+                <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-exclamation-triangle text-red-600"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-800">Error Modal</h3>
+            </div>
+            <p class="text-gray-600">Displays error messages to the user.</p>
+        </div>
+
+        <div class="demo-card" onclick="testModal('warning')">
+            <div class="flex items-center mb-3">
+                <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-exclamation text-yellow-600"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-800">Warning Modal</h3>
+            </div>
+            <p class="text-gray-600">Shows warnings about potential issues.</p>
+        </div>
+
+        <div id="formBtn" class="demo-card" > <!-- onclick="testModal('form')" -->
+            <div class="flex items-center mb-3">
+                <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-edit text-indigo-600"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-800">Form Modal</h3>
+            </div>
+            <p class="text-gray-600">Contains form inputs for data entry.</p>
+        </div>
+
+        <div class="demo-card" onclick="testModal('info')">
+            <div class="flex items-center mb-3">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-info-circle text-blue-600"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-800">Info Modal</h3>
+            </div>
+            <p class="text-gray-600">Displays informational content to users.</p>
+        </div>
+
+        <div class="demo-card" onclick="testModal('custom')">
+            <div class="flex items-center mb-3">
+                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-palette text-purple-600"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-800">Custom Modal</h3>
+            </div>
+            <p class="text-gray-600">Fully customizable modal with any content.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Container -->
+<div id="modal-container"></div>
+
+<script is:inline>
+
+    let modalDataConfiguration = {
+        title: 'Create New User',
+        content: `
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="input-group">
+                        <label class="input-label">First Name</label>
+                        <input type="text" class="input-field" placeholder="John">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Last Name</label>
+                        <input type="text" class="input-field" placeholder="Doe">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Email</label>
+                    <input type="email" class="input-field" placeholder="john@example.com">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Role</label>
+                    <select class="input-field">
+                        <option>User</option>
+                        <option>Admin</option>
+                        <option>Editor</option>
+                    </select>
+                </div>
+            </div>
+        `
+    }
+    
+    document.querySelector("#formBtn").addEventListener("click", ()=>{
+        testModal("formCustom", modalDataConfiguration);    
+    })
+    
+</script>

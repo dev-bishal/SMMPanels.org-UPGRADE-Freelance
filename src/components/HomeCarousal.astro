@@ -1,0 +1,68 @@
+---
+import carousalImg1 from "../assets/home-carousal (1).webp";
+import carousalImg2 from "../assets/home-carousal (2).webp";
+import carousalImg3 from "../assets/home-carousal (3).webp";
+import carousalImg4 from "../assets/home-carousal (4).webp";
+import { metaData } from "../pages/data";
+import { metaDataEs } from '../pages/es/data';
+import { metaDataFr } from '../pages/fr/data';
+import { metaDataPt } from '../pages/pt/data';
+import { metaDataRu } from '../pages/ru/data';
+import { metaDataZh } from '../pages/zh/data';
+import { metaDataHi } from '../pages/hi/data';
+import { metaDataBn } from "../pages/bn/data";
+import { metaDataUr } from "../pages/ur/data";
+import { metaDataId } from "../pages/id/data";
+
+interface Props {
+    lang ?: string;
+}
+
+const {lang = "en"} = Astro.props;
+
+let contentPath;
+if(lang == "en") contentPath = metaData;
+else if(lang == "ru") contentPath = metaDataRu;
+else if(lang == "zh") contentPath = metaDataZh
+else if(lang == "es") contentPath = metaDataEs
+else if(lang == "fr") contentPath = metaDataFr
+else if(lang == "pt") contentPath = metaDataPt
+else if(lang == "hi") contentPath = metaDataHi
+else if(lang == "bn") contentPath = metaDataBn
+else if(lang == "ur") contentPath = metaDataUr
+else if(lang == "id") contentPath = metaDataId
+---
+
+<div class="carousal-container relative size-full">
+    <div class="overlay absolute top-0 z-[2] size-full bg-gradient-to-l from-transparent to-[#0f1410] rounded-2xl"></div>
+    <div class="p-3 absolute top-0 z-[2] h-full w-1/2 flex justify-center flex-col gap-2 ml-5">
+        <h3 class="text-3xl font-semibold">{contentPath?.text[5]}</h3>
+        <a class="hover:bg-[#69b63d] bg-[#9bdd75] rounded-full gap-2 flex items-center px-3 py-2 w-fit" href={""}>{contentPath?.text[6]} <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+    <swiper-container class="mySwiper w-[89vw] lg:w-full" autoplay="true" loop="true" speed="1000" effect="fade" spaceBetween="0" slidesPerView="1">
+        {
+            <swiper-slide>
+                <div class="max-h-[360px] rounded-2xl">
+                    <img src={carousalImg1.src} alt="Home Carousal" class="size-full h-[360px] object-cover rounded-2xl">
+                </div>
+            </swiper-slide>
+            <swiper-slide>
+                <div class="max-h-[360px] rounded-2xl">
+                    <img src={carousalImg2.src} alt="Home Carousal" class="size-full h-[360px] object-cover rounded-2xl">
+                </div>
+            </swiper-slide>
+            <swiper-slide>
+                <div class="max-h-[360px] rounded-2xl">
+                    <img src={carousalImg3.src} alt="Home Carousal" class="size-full h-[360px] object-cover rounded-2xl">
+                </div>
+            </swiper-slide>
+            <swiper-slide>
+                <div class="max-h-[360px] rounded-2xl">
+                    <img src={carousalImg4.src} alt="Home Carousal" class="size-full h-[360px] object-cover rounded-2xl">
+                </div>
+            </swiper-slide>
+        }
+    </swiper-container>
+</div>
+
+<script is:inline src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-element-bundle.min.js"></script>

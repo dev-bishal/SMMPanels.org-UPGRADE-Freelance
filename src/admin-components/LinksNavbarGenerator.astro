@@ -1,0 +1,129 @@
+---
+
+---
+
+<style is:inline>
+    .dragging {
+        opacity: 0.5;
+        border: 2px dashed #3b82f6;
+    }
+</style>
+<div class="w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+    <div class="p-6">
+        <h2 class="block text-gray-700 text-sm font-medium mb-2">Navbar Link Store</h2>
+
+        <div class="space-y-3 mb-6">
+            <input type="text" id="linkText" placeholder="Link Label"
+                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#3b82f6] outline-none">
+            <input type="text" id="linkUrl" placeholder="URL"
+                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#3b82f6] outline-none">
+            <button type="button" onclick="addNavLink()"
+                class="w-full bg-[#3b82f6] text-white font-medium py-2 rounded-md hover:bg-blue-600 transition-colors">Add
+                Link</button>
+        </div>
+
+        <p class="text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">Drag to reorder:</p>
+        <ul id="navLinkList" class="space-y-2 mb-6">
+        </ul>
+
+        <button type="button" onclick="exportNavJson()"
+            class="hidden w-full border-2 border-black text-black font-bold py-2 rounded-md hover:bg-black hover:text-white transition-all">
+            Log Sorted JSON
+        </button>
+    </div>
+</div>
+
+<script is:inline>
+    let navLinks = [
+        {id: 'item-1771251770404', label: 'Home', href: '/'},
+        {id: 'item-1771251780228', label: 'Top Panels', href: '/panels'}
+    ];
+
+    function addNavLink() {
+        debugger
+        const text = document.getElementById('linkText');
+        const url = document.getElementById('linkUrl');
+        if (text.value && url.value) {
+            navLinks.push({ id: `item-${Date.now()}`, label: text.value, href: url.value });
+            text.value = ''; url.value = '';
+            renderNavLinks();
+        }
+    }
+
+    function removeLink(id) {
+        navLinks = navLinks.filter(link => link.id !== id);
+        renderNavLinks();
+    }
+
+    function renderNavLinks() {
+        const navlist = document.getElementById('navLinkList');
+        navlist.innerHTML = '';
+
+        navLinks.forEach((link, index) => {
+            const li = document.createElement('li');
+            li.className = "flex justify-between items-center p-3 bg-white border border-gray-200 rounded-lg cursor-move transition-all hover:shadow-sm";
+            li.draggable = true;
+            li.dataset.id = link.id;
+
+            // Drag Events
+            li.addEventListener('dragstart', () => li.classList.add('dragging'));
+            li.addEventListener('dragend', () => {
+                li.classList.remove('dragging');
+                updateOrder();
+            });
+
+            li.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-gray-400">☰</span>
+                        <div class="flex flex-col">
+                            <span class="text-black font-semibold text-sm">${link.label}</span>
+                            <span class="text-[10px] text-gray-400">${link.href}</span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="removeLink('${link.id}')" class="text-gray-400 hover:text-red-500 text-xs">✕</button>
+                `;
+            navlist.appendChild(li);
+        });
+    }
+
+    // Drag-over logic to determine insertion point
+    const navlist = document.getElementById('navLinkList');
+    navlist.addEventListener('dragover', e => {
+        e.preventDefault();
+        const draggingItem = document.querySelector('.dragging');
+        const afterElement = getDragAfterElement(navlist, e.clientY);
+        if (afterElement == null) {
+            navlist.appendChild(draggingItem);
+        } else {
+            navlist.insertBefore(draggingItem, afterElement);
+        }
+    });
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('li:not(.dragging)')];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function updateOrder() {
+        const currentIds = [...document.querySelectorAll('#navLinkList li')].map(li => li.dataset.id);
+        // Re-sort our data array to match the DOM order
+        navLinks = currentIds.map(id => navLinks.find(link => link.id === id));
+    }
+
+    function exportNavJson() {
+        const output = navLinks.map(({ label, href }) => ({ label, href }));
+        console.clear();
+        console.log("📦 Updated Navbar JSON:", output);
+        alert("Sorted JSON logged to console!");
+    }
+
+    renderNavLinks();
+</script>

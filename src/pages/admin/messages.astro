@@ -1,0 +1,535 @@
+---
+import { isAdminLoggedIn } from "../../data/admin-utils";
+import { getAPIPath, getImageBasePath } from "../../data/utils";
+import AdminLayout from "../../layouts/AdminLayout.astro";
+
+const adminCookie = Astro.cookies.get("admin");
+
+//#region Authentication
+if(!isAdminLoggedIn(adminCookie)){
+    return Astro.redirect("/admin/login");
+}
+
+const response = await fetch(getAPIPath() + `auth/validate`, {
+	method: "POST",
+    body : JSON.stringify({ userId : adminCookie?.value}),
+    headers : {
+        'Content-Type': 'application/json',
+        "origin" : "http://localhost:4321",
+        "x-api-key" : import.meta.env.API_SECURITY_KEY
+    }
+}).then(res => res.json());
+
+// console.log(response);
+
+if(response.status !== 200 && response.isValid !== true){
+    return Astro.redirect("/admin/login");
+}
+//#endregion
+---
+
+<style is:inline>
+    .contact-item {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .contact-item:hover {
+        background-color: #f8fafc;
+    }
+
+    .contact-item.active {
+        background-color: #3b82f6;
+        color: white;
+    }
+
+    .contact-item.active .contact-name,
+    .contact-item.active .contact-preview,
+    .contact-item.active .contact-time {
+        color: white;
+    }
+
+    .contact-item.unread {
+        background-color: #f0f9ff;
+        border-left: 3px solid #3b82f6;
+    }
+
+    .message-bubble {
+        max-width: 70%;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .message-bubble.sent {
+        margin-left: auto;
+        background-color: #3b82f6;
+        color: white;
+    }
+
+    .message-bubble.received {
+        background-color: #f3f4f6;
+        color: #374151;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .empty-state {
+        transition: all 0.3s ease;
+    }
+
+    .empty-state:hover {
+        transform: scale(1.02);
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .online {
+        background-color: #10b981;
+    }
+
+    .offline {
+        background-color: #6b7280;
+    }
+
+    .away {
+        background-color: #f59e0b;
+    }
+</style>
+
+<AdminLayout PageTitle="Messages" PageHeader="Messages" UserName={response.user.fullname || response.user.username} avatarImagePath={getImageBasePath() + response.user.ProfilePic} emailAdd = {response.user.email}>
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Messages</h1>
+                    <p class="text-gray-600">Read and manage your conversations</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-4 h-[600px]">
+                <!-- Left Side - Contacts List -->
+                <div class="lg:col-span-1 border-r border-gray-200 overflow-y-auto">
+                    <!-- Contacts Header -->
+                    <div class="p-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-800">Conversations</h2>
+                        <p class="text-gray-600 text-sm mt-1 hidden">
+                            <span id="unread-count">3</span> unread messages
+                        </p>
+                    </div>
+
+                    <!-- Contacts List -->
+                    <div id="contacts-list" class="divide-y divide-gray-100">
+                        <!-- Contacts will be dynamically added here -->
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="contacts-empty" class="empty-state hidden text-center py-12 px-4">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-comments text-gray-400 text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">No conversations</h3>
+                        <p class="text-gray-600">Your message conversations will appear here.</p>
+                    </div>
+                </div>
+
+                <!-- Right Side - Message View -->
+                <div class="lg:col-span-3 flex flex-col">
+                    <!-- Message Header -->
+                    <div id="message-header" class="p-4 border-b border-gray-200 hidden">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <img id="contact-avatar" class="w-10 h-10 rounded-full" src="" alt="">
+                                <div>
+                                    <h3 id="contact-name" class="font-semibold text-gray-800"></h3>
+                                    <div class="flex items-center space-x-2">
+                                        <span id="contact-status" class="status-dot"></span>
+                                        <span id="contact-status-text" class="text-gray-600 text-sm"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button type="button" id="mark-read" title="Mark read"
+                                    class="text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100">
+                                    <i class="fas fa-envelope-open"></i>
+                                </button>
+                                <button type="button" id="mark-unread" title="Mark unread"
+                                    class="text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100">
+                                    <i class="fas fa-envelope"></i>
+                                </button>
+                                <button type="button" id="delete-conversation" title="Delete conversation"
+                                    class="text-red-600 hover:text-red-900 p-2 rounded-lg hover:bg-red-50">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Messages Container -->
+                    <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                        <!-- Messages will be dynamically added here -->
+                    </div>
+
+                    <!-- Empty Message State -->
+                    <div id="message-empty" class="empty-state flex-1 flex items-center justify-center">
+                        <div class="text-center">
+                            <div
+                                class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-comment text-gray-400 text-3xl"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">No conversation selected</h3>
+                            <p class="text-gray-600 mb-6">Select a conversation from the list to view messages</p>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+</AdminLayout>
+<script is:inline define:vars={{key:import.meta.env.API_SECURITY_KEY, APIUrl : getAPIPath()}}>
+    // Sample data
+    let allMessages = [];
+    
+    // DOM Elements
+    const contactsList = document.getElementById('contacts-list');
+    const contactsEmpty = document.getElementById('contacts-empty');
+    const messageHeader = document.getElementById('message-header');
+    const messagesContainer = document.getElementById('messages-container');
+    const messageEmpty = document.getElementById('message-empty');
+    const unreadCount = document.getElementById('unread-count');
+
+    let selectedContactId = null;
+
+    // Render contacts list
+    function renderContacts() {
+        contactsList.innerHTML = '';
+
+        if (allMessages.length === 0) {
+            contactsEmpty.classList.remove('hidden');
+            return;
+        }
+
+        contactsEmpty.classList.add('hidden');
+
+        allMessages.forEach(contact => {
+            const contactElement = createContactElement(contact);
+            contactsList.appendChild(contactElement);
+        });
+
+        updateUnreadCount();
+    }
+
+    // Create contact element
+    function createContactElement(contact) {
+        const div = document.createElement('div');
+        div.className = `group contact-item p-4 ${contact.status == 'unread' ? 'unread' : ''} ${selectedContactId === contact.id ? 'active' : ''}`;
+        div.setAttribute('data-contact-id', contact.id);
+
+        div.innerHTML = `
+            <div class="flex items-center space-x-3">
+                <div class="relative">
+                    <img class="w-12 h-12 rounded-full" src="/assets/images/user.png" alt="${contact.username}">
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between">
+                        <h3 class="contact-name font-medium text-gray-900 max-w-[100px] truncate">${contact.username}</h3>
+                        <span class="contact-time text-xs text-gray-500">${formatDate(contact.createdAt)}</span>
+                    </div>
+                    <p class="contact-preview text-sm text-gray-600 truncate mt-1">${contact.message || "No Message"}</p>
+                    ${contact.status == "unread" ? `
+                        <div class="flex items-center justify-between mt-1">
+                            <span class="text-xs text-blue-600 font-medium group-active:text-white">unread</span>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+        
+        div.addEventListener('click', () => {
+            selectContact(contact.id);
+            div.classList.remove("unread");
+        });
+        return div;
+    }
+
+    // Select contact
+    function selectContact(contactId) {
+        selectedContactId = contactId;
+        const contact = allMessages.find(c => c.id === contactId);
+
+        if (!contact) return;
+
+        // Update contacts list active state
+        document.querySelectorAll('.contact-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        document.querySelector(`[data-contact-id="${contactId}"]`).classList.add('active');
+        document.querySelector(`[data-contact-id="${contactId}"]`).classList.remove('unread');
+
+        // Show message view
+        showMessageView(contact);
+
+        // Mark messages as read
+        if (contact.status == "unread") {
+            /* contact.messages.forEach(message => {
+                message.read = true;
+            });
+            contact.unread = 0; */
+            contact.status = "read";
+            markAsRead(contact.id);
+        }
+    }
+
+    // Show message view
+    function showMessageView(contact) {
+        messageEmpty.classList.add('hidden');
+        messageHeader.classList.remove('hidden');
+        messagesContainer.innerHTML = '';
+
+        // Update header
+        document.getElementById('contact-avatar').src = "/assets/images/user.png";
+        document.getElementById('contact-name').textContent = contact.username + ` | Subject : General Inquiry`;
+        document.getElementById('contact-status').className = `status-dot online`;
+        document.getElementById('contact-status-text').textContent = contact.email;
+
+        // Render messages
+        const messageElement = createMessageElement(contact.message, contact.createdAt);
+        messagesContainer.appendChild(messageElement);
+
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        // Update button events
+        updateButtonEvents(contact.id);
+    }
+
+    // Create message element
+    function createMessageElement(message, datetime) {
+        
+        const div = document.createElement('div');
+        if(message){
+            div.className = `message-bubble rounded-lg p-3 ${message.type === 'sent' ? 'sent' : 'received'}`;
+    
+            div.innerHTML = `
+                <div class="text-sm">${message.replace(/\n/g, '<br>')}</div>
+                <div class="text-xs opacity-70 mt-1 text-right">${formatDate(datetime)}</div>
+            `;
+    
+        }
+        return div;
+    }
+
+    // Update button events
+    function updateButtonEvents(contactId) {
+        const contact = allMessages.find(c => c.id === contactId);
+        if (!contact) return;
+
+        // Mark as read
+        document.getElementById('mark-read').onclick = () => {
+            markAsRead(contact.id)
+            renderContacts();
+        };
+
+        // Mark as unread
+        document.getElementById('mark-unread').onclick = () => {
+            markAsUnRead(contact.id)
+        };
+
+        // Delete conversation
+        document.getElementById('delete-conversation').onclick = () => {
+            // Show Delete modal if Yes proceed else return
+            showDeleteModal().then(resp => {
+                if (resp === 'Delete Clicked') {
+                    // Perform delete operation
+
+                    const index = allMessages.findIndex(c => c.id === contactId);
+                    markAsDelete(contactId)
+                    if (index !== -1) {
+                        allMessages.splice(index, 1);
+                        selectedContactId = null;
+                        renderContacts();
+                        showEmptyMessageState();
+                    }
+                }
+            });
+        };
+    }
+
+    // Show empty message state
+    function showEmptyMessageState() {
+        messageHeader.classList.add('hidden');
+        messagesContainer.innerHTML = '';
+        messageEmpty.classList.remove('hidden');
+    }
+
+    // Update unread count
+    function updateUnreadCount() {
+        const totalUnread = allMessages.filter(item => item.status === "unread").length;
+        unreadCount.textContent = totalUnread;
+        unreadCount.parentElement.classList.remove("hidden")
+    }
+
+    // Fetch messages from API
+    async function fetchMessages() {
+        try {
+            // In a real application, you would use your actual API endpoint
+            // For demonstration, we'll use JSONPlaceholder and transform the data
+            const response = await fetch(APIUrl + `messages`, {
+                method: "GET",
+                headers: {
+                    'Content-Type': 'application/json',
+                    "origin" : "http://localhost:4321",
+                    // "x-api-key" : key
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log(data);
+
+            // Transform the data to match our expected format
+            // In a real application, your API would likely return data in the correct format
+            allMessages = data.map((item, index) => {
+                // Generate realistic data based on the index
+
+                return {
+                    email  : item.email ,
+                    message : item.message,
+                    status : item.status,
+                    subject : item.subject,
+                    username : item.username,
+                    createdAt : item.createdAt,
+                    id : item._id,
+                };
+            });
+
+            renderContacts();
+
+            // Add some sample interactions
+            setTimeout(() => {
+                if (allMessages.length > 0) {
+                    selectContact(allMessages[0].id);
+                }
+            }, 100);
+
+        } catch (error) {
+            console.error('Error fetching messages:', error);
+            toastSystem.show({
+                type: 'error',
+                title: `Message fetching error`,
+                message: `An Error occured while fetching Messages`,
+                duration: 6000
+            });
+        }
+    }
+
+    // Request to mark message as Read
+    async function markAsRead(id) {
+        try {
+            const response = await fetch(APIUrl + `messages/${id}`, {
+                method: "PUT",
+                headers: {
+                    'Content-Type': 'application/json',
+                    "origin" : "http://localhost:4321",
+                    // "x-api-key" : key
+                },
+                body : JSON.stringify({status : "read"})
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log(data);
+        } catch (error) {
+            console.log("An error occured-", error);
+        }
+    }
+
+    // Request to mark message as UNRead
+    async function markAsUnRead(id) {
+        try {
+            const response = await fetch(APIUrl + `messages/${id}`, {
+                method: "PUT",
+                headers: {
+                    'Content-Type': 'application/json',
+                    "origin" : "http://localhost:4321",
+                    // "x-api-key" : key
+                },
+                body : JSON.stringify({status : "unread"})
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log(data);
+        } catch (error) {
+            console.log("An error occured-", error);
+        }
+    }
+
+    // Request to mark message as Delete
+    async function markAsDelete(id) {
+        try {
+            const response = await fetch(APIUrl + `messages/${id}`, {
+                method: "DELETE",
+                headers: {
+                    'Content-Type': 'application/json',
+                    "origin" : "http://localhost:4321",
+                    // "x-api-key" : key
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log(data);
+        } catch (error) {
+            console.log("An error occured-", error);
+        }
+    }
+
+    // Format date to readable format
+    function formatDate(dateString) {
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString(undefined, options);
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function () {
+        fetchMessages();
+    });
+
+    
+</script>

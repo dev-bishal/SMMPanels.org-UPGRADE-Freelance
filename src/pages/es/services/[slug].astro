@@ -1,0 +1,362 @@
+---
+import GlassLayout from "../../../components/GlassLayout.astro";
+import { getAPIPath, getRandomElements, mainData, getImageBasePath } from "../../../data/utils";
+import MainLayout from "../../../layouts/MainLayout.astro";
+import { metaDataEs } from "../data";
+
+interface serviceSchema {
+    serviceColor: string;
+    serviceLogo: {
+        name: string;
+        mediaType: string;
+        url: string;
+    };
+    serviceTitle: string;
+}
+
+export const prerender = true;
+export async function getStaticPaths() {
+
+    const allServicesFetch: any = await fetch(getAPIPath() + "services");
+    let allServiceRes: serviceSchema[] = await allServicesFetch.json();
+
+    return allServiceRes.map((service: any) => ({
+        params: {
+            slug: service.serviceTitle
+                .toString()
+                .toLowerCase()
+                .replaceAll(" ", "-"),
+        },
+        props: { service },
+    }));
+}
+
+const { service } = Astro.props;
+let serviceName = service.serviceTitle;
+
+//Fetching Site Settings
+const allSiteFetch:any = await fetch(getAPIPath() + "siteSettings/" + import.meta.env.SITESETTINGSKEY).then(Response => Response.json());
+
+let servicePageListCount = allSiteFetch.platformServiceCount || 20;
+
+let langDirectory = "";
+if(metaDataEs.language != "en"){
+    langDirectory = "/"+ metaDataEs.language
+}
+---
+<style>
+    .offer_panelTitle:hover .panel-links{
+        transform: scale(1.05);
+    }
+
+    .offer_panelTitle:hover .panel-links span{
+        visibility: visible;
+    }
+</style>
+<MainLayout 
+    siteTitle = {allSiteFetch.SiteTitle} 
+    lang={metaDataEs.language} 
+    title={allSiteFetch.SiteTitle + " - " + service.serviceTitle}
+    metaDescription="Lorem ipsum dolor sit amet consectetur adipisicing elit. Rerum voluptate expedita, modi fuga maiores qui." 
+    pageType="article">
+    
+    <div class="content-wrapper flex flex-wrap lg:justify-start justify-center gap-5 mt-8 mb-6 lg:px-5">
+        
+        <article class="flex flex-col gap-5 w-full text-white">
+            <span class="header lg:w-full w-[90vw] flex gap-4 flex-col lg:flex-row p-5 rounded-xl [text-shadow:_1px_1px_4px_rgb(0_0_0_/_74%)]"
+                style={`background-color: ${service.serviceColor}`} >
+                <span class="flex gap-4 lg:w-[60%]">
+                    <span class="flex p-3 size-28 rounded-lg bg-white">
+                        <img
+                            src={getImageBasePath() + service.serviceLogo}
+                            alt={service.serviceTitle}
+                            class="size-full rounded"
+                        />
+                    </span>
+                    <span>
+                        <h1 class="text-5xl font-bold">
+                            {service.serviceTitle}
+                        </h1>
+                        <span class="text-2xl font-semibold" id="service_Count" >
+                            <!-- Service Count will be shown here -->
+                        </span>
+                    </span>
+                </span>
+                <span class="text-2xl lg:w-[40%] font-semibold lg:text-right text-center" id="panel_Count">
+                    <!-- Panel count Will be shown here -->
+                </span>
+            </span>
+            
+            <div class="services lg:min-h-[400px] flex flex-col justify-center items-center">
+                <h2 class="text-3xl font-semibold">{metaDataEs.text[3]}</h2>
+
+                <GlassLayout otherClass="w-full">
+                    <div id="FiltersElementsHolder" class="z-[1] w-full p-4 gap-4 items-center flex-wrap justify-between shadow flex">
+                        <div>
+                            <label class="mr-2 font-medium">Filtrar por calificación:</label>
+                            <select id="ratingFilter" class="border p-1 rounded text-black">
+                                <option value="">Todas las calificaciones</option>
+                                <option value="5">⭐ 5 estrellas</option>
+                                <option value="4">⭐ 4 estrellas o más</option>
+                                <option value="3">⭐ 3 estrellas o más</option>
+                                <option value="2">⭐ 2 estrellas o más</option>
+                                <option value="1">⭐ 1 estrella o más</option>
+                            </select>
+                        
+                            <div class="mt-6">
+                                <label class="flex items-center gap-2 cursor-pointer select-none w-fit">
+                                    <input id="newArrivalFilter" type="checkbox" class="sr-only peer" />
+                                    <div class="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-blue-500 relative transition-all duration-300">
+                                        <div class="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 peer-checked:translate-x-5 transition-transform duration-300 shadow-sm"></div>
+                                    </div>
+                                    <span class="text-sm text-white">Mostrar solo novedades</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="mr-2 font-medium">Resultados por página: </label>
+                            <select id="limitSelect" class="border rounded p-2 text-sm text-black">
+                                <option value="15">15</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
+                    </div> 
+                </GlassLayout>
+
+                <GlassLayout isGlassDark={true} borderColor="#9ca3af4f" otherClass="flex-col w-full mt-5">
+
+                    <div class="services-table-holder text-center p-5 lg:w-full w-[89vw] overflow-auto z-[1] mx-auto ">
+                        <!-- Table -->
+                        <div class="p-4" id="tableHeader">
+                            <!-- Your existing table -->
+                            <table class="w-full table-auto text-left shadow rounded">
+                                <thead>
+                                    <tr class="offerHeader w-full bg-[#000000b9] font-semibold text-white rounded-sm">
+                                        <th class="p-4 cursor-pointer" data-sort="SNo">{metaDataEs.text[46]}</th>
+                                        <th class="p-4 cursor-pointer" data-sort="name">{metaDataEs.text[47]} ⬍</th>
+                                        <th class="p-4 cursor-pointer" data-sort="min">{metaDataEs.text[48]} ⬍</th>
+                                        <th class="p-4 cursor-pointer" data-sort="max">{metaDataEs.text[49]} ⬍</th>
+                                        <th class="p-4 cursor-pointer" data-sort="rate">{metaDataEs.text[50]} ⬍</th>
+                                        <th class="p-4 text-center">{metaDataEs.text[1]}</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBody"></tbody>
+                            </table>
+                        </div>                  
+
+                    </div>
+
+                </GlassLayout>
+
+                
+                <!-- Pagination -->
+                <div id="PaginationElementHolder" class="p-4 justify-between items-center flex w-full">
+                    <button id="prevPage" class="bg-[#0056b3] text-white px-4 py-1 rounded disabled:opacity-50"><i class="fa-duotone fa-chevrons-left"></i> Previous</button>
+                    <span id="pageInfo" class="font-semibold">
+                        Page <span id="currentPage">1</span> of <span id="totalPages">1</span>
+                    </span>
+                    <button id="nextPage" class="bg-[#0056b3] text-white px-4 py-1 rounded disabled:opacity-50">Next <i class="fa-duotone fa-chevrons-right"></i></button>
+                </div>
+
+            </div>
+            <!-- <h2 class="font-bold text-xl text-center">Sorry No Service Available right now for this Website.</h2> -->
+            
+            
+        </article>
+        
+    </div>
+
+</MainLayout>
+
+<script is:inline src="/assets/scripts/main.js"></script>
+
+<script is:inline define:vars={{ImagePath : getImageBasePath(), serviceName, APIUrl : getAPIPath()}}>
+    class ServicesTable {
+    constructor() {
+        this.currentPage = 1;
+        this.limit = 25;
+        this.sortField = 'serviceNo';
+        this.sortOrder = 'asc';
+        this.totalRecords = 0;
+        this.totalPages = 1;
+        this.services = [];
+        this.uniquePanelsData = [];
+        
+        this.init();
+    }
+
+    init() {
+        // Get DOM elements
+        this.tableBody = document.getElementById('tableBody');
+        this.limitSelect = document.getElementById('limitSelect');
+        this.prevBtn = document.getElementById('prevPage');
+        this.nextBtn = document.getElementById('nextPage');
+        this.currentPageSpan = document.getElementById('currentPage');
+        this.totalPagesSpan = document.getElementById('totalPages');
+        this.headers = document.querySelectorAll('th[data-sort]');
+
+        // Bind event listeners
+        this.limitSelect.addEventListener('change', () => {
+            this.limit = parseInt(this.limitSelect.value);
+            this.currentPage = 1;
+            this.fetchServices();
+        });
+
+        this.prevBtn.addEventListener('click', () => {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+                this.fetchServices();
+            }
+        });
+
+        this.nextBtn.addEventListener('click', () => {
+            debugger
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+                this.fetchServices();
+            }
+        });
+
+        // Add sorting listeners
+        this.headers.forEach(header => {
+            header.addEventListener('click', () => {
+                const field = header.dataset.sort;
+                this.handleSort(field);
+            });
+        });
+
+        // Initial fetch
+        this.fetchServices();
+    }
+
+    async fetchServices() {
+        try {
+            // Show loading state
+            this.tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8">Loading...</td></tr>';
+
+            // Build query parameters
+            const params = new URLSearchParams({
+                page: this.currentPage,
+                limit: this.limit,
+            });
+
+            // Fetch data from your API
+            const response = await fetch(APIUrl + `service_api?q=${serviceName}&${params}`);
+            const data = await response.json();
+
+            this.services = data.services;
+            this.totalRecords = data.stats.totalRecords; 
+            document.getElementById("service_Count").textContent = data.stats.totalRecords + " Servicios disponibles";
+            document.getElementById("panel_Count").textContent = "Paneles que ofrecen servicios : " + data.stats.uniquePanelsData.length;
+
+            this.totalPages = data.stats.totalPageCount;
+            this.uniquePanelsData = data.stats.uniquePanelsData;
+
+            this.renderTable();
+            this.updatePaginationControls();
+
+        } catch (error) {
+            console.error('Error fetching services:', error);
+            this.tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-red-500">Error loading data. Please try again.</td></tr>';
+        }
+    }
+
+    renderTable() {
+        if (this.services.length === 0) {
+            this.tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8">No services found</td></tr>';
+            return;
+        }
+
+        const startIndex = (this.currentPage - 1) * this.limit;
+        
+        this.tableBody.innerHTML = this.services.map((service, index) => {
+            // Format date if needed
+            const addedText = service.createdAt ? 
+                `<div class="text-xs text-gray-500 mt-1">Added: ${new Date(service.createdAt).toLocaleDateString()}</div>` : '';
+
+            return `
+                <tr class="offerList w-full border-b border-[#9ca3af4f] hover:bg-[#9ca3af4f] rounded-md cursor-default text-sm">
+                    <td class="p-4">${startIndex + index + 1}</td>
+                    <td class="p-4">
+                        <div class="lg:max-w-[400px]">${service.name}</div>
+                        ${addedText}
+                    </td>
+                    <td class="p-4 text-center">${service.min}</td>
+                    <td class="p-4 text-center">${service.max}</td>
+                    <td class="p-4 text-center">$${service.rate}</td>
+                    <td class="p-4 text-center">
+                        <span class="group flex flex-col justify-center items-center panel-links transition-all ease-in-out">
+                            <a class="hover:underline hover:font-semibold" href="/panels/${service.panelSlug}">
+                                <img src="${this.getImageBasePath() + (service.panelImage || 'default-panel.jpg')}" 
+                                     alt="${service.panelTitle}" 
+                                     class="rounded-md w-16"/>
+                            </a>
+                            <span class="p-1 gap-4 text-xs justify-between items-center flex-col flex invisible group-hover:visible">
+                                <a rel="nofollow" class="hover:underline hover:font-semibold" href="https://${service.panelTitle}">
+                                    ${service.panelTitle} <i class="fa-solid fa-up-right"></i>
+                                </a>
+                            </span>
+                        </span>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    updatePaginationControls() {
+        this.currentPageSpan.textContent = this.currentPage;
+        this.totalPagesSpan.textContent = this.totalPages;
+        
+        this.prevBtn.disabled = this.currentPage <= 1;
+        this.nextBtn.disabled = this.currentPage >= this.totalPages;
+    }
+
+    handleSort(field) {
+        // Map the display field names to actual API fields
+        const fieldMap = {
+            'SNo': 'serviceNo',
+            'serviceName': 'name',
+            'serviceMin': 'min',
+            'serviceMax': 'max',
+            'serviceRate': 'rate'
+        };
+
+        const apiField = fieldMap[field] || field;
+
+        // Toggle sort order if clicking the same field
+        if (this.sortField === apiField) {
+            this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.sortField = apiField;
+            this.sortOrder = 'asc';
+        }
+
+        // Update sort indicators in UI
+        this.headers.forEach(header => {
+            const headerField = header.dataset.sort;
+            header.innerHTML = headerField.charAt(0).toUpperCase() + headerField.slice(1) + ' ⬍';
+        });
+
+        const currentHeader = Array.from(this.headers).find(h => h.dataset.sort === field);
+        if (currentHeader) {
+            currentHeader.innerHTML = field.charAt(0).toUpperCase() + field.slice(1) + 
+                (this.sortOrder === 'asc' ? ' ↑' : ' ↓');
+        }
+
+        // Reset to first page when sorting
+        this.currentPage = 1;
+        this.fetchServices();
+    }
+
+    getImageBasePath() {
+        // Return your image base path
+        return ImagePath;
+    }
+}
+
+// Initialize the table when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    new ServicesTable();
+});
+</script>

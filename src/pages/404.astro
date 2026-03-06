@@ -1,0 +1,23 @@
+---
+import { getAPIPath } from "../data/utils";
+import MainLayout from "../layouts/MainLayout.astro";
+const allSiteFetch:any = await fetch(getAPIPath() + "siteSettings/" + import.meta.env.SITESETTINGSKEY).then(Response => Response.json());
+
+---
+
+<MainLayout 
+    siteTitle = {allSiteFetch.SiteTitle} 
+    title={allSiteFetch.SiteTitle + " - Page Not Found"} 
+    metaDescription=`Page Not Found`
+    lang = "en"
+    pageType = "page">
+    <div class="content-wrapper text-white flex flex-wrap lg:justify-start justify-center gap-5 my-6 px-5 lg:mt-24 mt-20">
+        <div class="404Content py-8 gap-y-7 size-full flex flex-col justify-center items-center">
+            <h1 class="text-2xl">OOOOPS!! ERROR 404 </h1>
+            <span class="text-4xl">PAGE NOT FOUND</span>
+            <p>It might has been removed, renamed Or temporarily unavailable. Let's go to home!</p>
+
+            <a href="/" class="rounded px-4 py-2 bg-[#00b339] text-white"><i class="fa-solid fa-house"></i> Home</a>
+        </div>
+    </div>
+</MainLayout>

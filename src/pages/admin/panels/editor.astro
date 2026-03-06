@@ -1,0 +1,606 @@
+---
+import PaymentOptionsSelector from "../../../admin-components/PaymentOptionsSelector.astro";
+import Rating from "../../../admin-components/Rating.astro";
+import RatingOthers from "../../../admin-components/RatingOthers.astro";
+import { isAdminLoggedIn } from "../../../data/admin-utils";
+import { getAPIPath, getImageBasePath } from "../../../data/utils";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+
+const adminCookie = Astro.cookies.get("admin");
+
+//#region Authentication
+if(!isAdminLoggedIn(adminCookie)){
+    return Astro.redirect("/admin/login");
+}
+
+const response = await fetch(getAPIPath() + `auth/validate`, {
+	method: "POST",
+    body : JSON.stringify({ userId : adminCookie?.value}),
+    headers : {
+        'Content-Type': 'application/json',
+        "origin" : "http://localhost:4321",
+        "x-api-key" : import.meta.env.API_SECURITY_KEY
+    }
+}).then(res => res.json());
+
+// console.log(response);
+
+if(response.status !== 200 && response.isValid !== true){
+    return Astro.redirect("/admin/login");
+}
+//#endregion
+---
+<style is:inline>
+    .ce-header {
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    .ce-header h1 {
+        font-size: 2.25rem;
+    }
+
+    .ce-header h2 {
+        font-size: 1.875rem;
+    }
+
+    .ce-header h3 {
+        font-size: 1.5rem;
+    }
+
+    .tag-chip {
+        transition: all 0.2s;
+    }
+
+    .tag-chip:hover {
+        background-color: #3b82f6;
+        color: white;
+    }
+
+    .image-upload-container {
+        transition: all 0.3s;
+    }
+
+    .editor-container {
+        min-height: 400px;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+    .chip-selected {
+        background-color: #3b82f6;
+        color: white;
+        transform: scale(1.05);
+    }
+    .chip-checked {
+        background-color: #10b981;
+        color: white;
+    }
+    .fade-in {
+        animation: fadeIn 0.5s;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+<AdminLayout PageTitle="Panel Editor" PageHeader="Panel Editor" UserName={response.user.fullname || response.user.username} avatarImagePath={getImageBasePath() + response.user.ProfilePic} emailAdd = {response.user.email}>
+
+    <form id="panel-editor-form">
+        <!-- Main Content -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left Column - Panel Content -->
+                <div class="lg:col-span-2 space-y-6">
+
+                    <!-- Title -->
+                    <div>
+                        <label class="block text-gray-700 text-sm font-medium mb-2" for="panelTitle">Panel
+                            Title</label>
+                        <input type="text" id="panelTitle" name="panelTitle"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Enter Panel title">
+                    </div>  
+    
+                    <!-- Slug -->
+                    <div>
+                        <label class="block text-gray-700 text-sm font-medium mb-2" for="panelSlug">Slug</label>
+                        <input type="text" id="panelSlug" name="panelSlug"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Panel-url-slug">
+                        <p class="text-gray-500 text-sm mt-1">https://smmpanels.org/panels/<span
+                                id="slug-preview">Panel-url-slug</span></p>
+                    </div>  
+
+                    <!-- website-url -->
+                    <div>
+                        <label class="block text-gray-700 text-sm font-medium mb-2" for="panelWebsiteURL">Panel Website URL</label>
+                        <input type="text" id="panelWebsiteURL" name="panelWebsiteURL"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Panel-url-website-url">
+                    </div>
+    
+                    <!-- Editor.js Container -->
+                    <div>
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Content</label>
+                        <div id="editorjs" class="editor-container"></div>
+                    </div>  
+                    
+                    <PaymentOptionsSelector />
+                </div>  
+    
+                <!-- Right Column - Settings -->
+                <div class="space-y-6">
+                    <div class="flex space-x-3 justify-end">
+                        <button class="hidden bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg flex items-center">
+                            <i class="fas fa-eye mr-2"></i> Preview
+                        </button>
+                        <button id="savePanel" type="submit"
+                            class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center">
+                            <i class="fas fa-save mr-2"></i> Save Panel
+                        </button>
+                    </div>  
+    
+                    <!-- Featured Image -->
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Featured Image</h3>  
+    
+                        <div
+                            class="image-upload-container border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-[#3b82f6]">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600">Click to upload or drag and drop</p>
+                            <p class="text-xs text-gray-500">SVG, PNG, JPG or GIF (max. 5MB)</p>
+                            <input type="file" class="hidden" id="featured-image-upload" name="featured-image-upload">
+                        </div>  
+    
+                        <div id="image-preview" class="hidden mt-4">
+                            <img src="" alt="Featured image preview" class="rounded-lg max-h-48 mx-auto">
+                            <button type="button" class="mt-2 text-red-600 text-sm">
+                                <i class="fas fa-trash mr-1"></i> Remove image
+                            </button>
+                        </div>
+                    </div>  
+    
+                    <!-- API Url -->
+                    <div>
+                        <label class="block text-gray-700 text-sm font-medium mb-2" for="panelAPILink">API Url</label>
+                        <input type="text" id="panelAPILink" name="panelAPILink"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Enter API Url">
+                    </div>  
+    
+                    <!-- API Key -->
+                    <div>
+                        <label class="block text-gray-700 text-sm font-medium mb-2" for="panelAPIKey">API Key</label>
+                        <input type="text" id="panelAPIKey" name="panelAPIKey"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Enter API Key">
+                    </div>  
+    
+                    <!-- Meta Description -->
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                        <label class="text-lg font-medium text-gray-900 mb-4" for="panelMetaDescription">Meta
+                            Description</label>
+                        <textarea id="panelMetaDescription" name="panelMetaDescription" rows="3"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Brief description for search engines"></textarea>
+                        <p class="text-gray-500 text-sm mt-1">Recommended: 150-160 characters</p>
+                    </div>  
+    
+                    <!-- Rating -->
+                    <Rating />  
+    
+                    <!-- Others Rating -->
+                    <RatingOthers />
+                </div>
+            </div>
+        </div>
+    </form>
+
+</AdminLayout>
+
+<!-- Editor.js -->
+<script is:inline src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/@editorjs/underline@latest"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/@editorjs/embed@latest"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/@editorjs/marker@latest"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@latest"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/@editorjs/raw@latest"></script>
+
+<script is:inline define:vars={{key:import.meta.env.API_SECURITY_KEY , APIUrl : getAPIPath(), imagePath : getImageBasePath(), authorId : adminCookie?.value}}>
+    let editor;
+    let base64String;
+    let fileType;
+    let isImageRemoved = false;
+    
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize Editor.js
+        editor = new EditorJS({
+            holder: 'editorjs',
+            tools: {
+                header: {
+                    class: Header,
+                    config: {
+                        placeholder: 'Enter a header',
+                        levels: [1, 2, 3, 4],
+                        defaultLevel: 2
+                    }
+                },
+                List: {
+                    class: EditorjsList,
+                    inlineToolbar: true,
+                    config: {
+                        defaultStyle: 'unordered'
+                    },
+                },
+                embed: {
+                    class: Embed,
+                    config: {
+                        services: {
+                            youtube: true,
+                            coub: true
+                        }
+                    }
+                },
+                quote: {
+                    class: Quote,
+                    inlineToolbar: true,
+                    config: {
+                        quotePlaceholder: 'Enter a quote',
+                        captionPlaceholder: 'Quote\'s author',
+                    },
+                },
+                marker: {
+                    class: Marker,
+                    shortcut: 'CMD+SHIFT+M',
+                },
+                delimiter: {
+                    class: Delimiter,
+                },
+                raw: {
+                    class : RawTool
+                },
+            },
+            placeholder: 'Start writing your Panel here...',
+            autofocus: true,
+            
+        });
+        
+        // Fetching Services
+        let servicesData = [];
+        // fetchServicesData();
+
+        // Fetching Panel Data after 1 second only if User is Editing the Panel (using Panel ID)
+        setTimeout(() => {
+            showLoadingModal();
+            if(localStorage.getItem("edit-panel"))
+                fetchPanelData(localStorage.getItem("edit-panel"));
+            modalSystem.closeAll();
+        }, 1000);
+
+        // Update slug preview as user types title
+        const titleInput = document.getElementById('panelTitle');
+        const slugInput = document.getElementById('panelSlug');
+        const slugPreview = document.getElementById('slug-preview');
+
+        titleInput.addEventListener('input', function () {
+            const title = titleInput.value;
+            const slug = title.toLowerCase()
+                .replace(/[^\w ]+/g, '')
+                .replace(/ +/g, '-');
+
+            slugInput.value = slug;
+            slugPreview.textContent = slug;
+        });
+
+        slugInput.addEventListener('input', function () {
+            slugPreview.textContent = slugInput.value;
+        });
+
+        // Featured image upload preview
+        const imageUpload = document.getElementById('featured-image-upload');
+        const imageUploadContainer = document.querySelector('.image-upload-container');
+        const imagePreview = document.getElementById('image-preview');
+        const imagePreviewImg = imagePreview.querySelector('img');
+
+        imageUploadContainer.addEventListener('click', function () {
+            imageUpload.click();
+        });
+
+        imageUpload.addEventListener('change', async function () {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                
+                fileType = (this.files[0].name.split(".")[this.files[0].name.split(".").length - 1]);
+                
+                base64String = await imageFileToBase64(this.files[0]);
+                reader.onload = function (e) {
+                    imagePreviewImg.src = e.target.result;
+                    imagePreview.classList.remove('hidden');
+                    imageUploadContainer.classList.add('hidden');
+                };
+
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        // Remove image button
+        imagePreview.querySelector('button').addEventListener('click', function () {
+            imagePreview.classList.add('hidden');
+            imageUploadContainer.classList.remove('hidden');
+            imageUpload.value = '';
+
+            isImageRemoved = true;
+        });
+
+        // Save Panel functionality
+        const form = document.getElementById('panel-editor-form');
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            
+            document.getElementById("readRatingBtn").click();
+            const formData = new FormData(this);
+
+            if(base64String)
+                formData.append("imageBase64", base64String);
+            if(fileType)
+                formData.append("fileType", fileType);
+            if(isImageRemoved)
+                formData.append("removeImage", true);
+                
+            formData.append("authorId", authorId);
+            
+            editor.save().then(async (outputData) => {
+                console.log('Panel content: ', outputData);
+                formData.append("panelTextDescription", JSON.stringify(outputData.blocks)
+                    .replaceAll("&nbsp;", " ")
+                    .replaceAll("  ", " ")
+                    .replaceAll("  ", " ")
+                );
+                
+                // alert('Panel saved successfully!');
+                const formDataObj = {};
+                formData.forEach((value, key) => (formDataObj[key] = value));
+
+                debugger
+                console.log(formDataObj);
+                
+                showLoadingModal();
+                try {
+                    let APIPath = APIUrl + "panels/"; 
+                    let ReqType = "POST";
+
+                    if(localStorage.getItem("edit-panel")){
+                        APIPath = `${APIUrl}panels/${localStorage.getItem("edit-panel")}`;
+                        ReqType = "PUT";
+                    }
+
+                    const response = await fetch(APIPath, {
+                        method: ReqType,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            "origin" : "http://localhost:4321",
+                            // "x-api-key" : key,
+                        },
+                        body : JSON.stringify(formDataObj),
+                    });
+            
+                    const data = await response.json();
+                    console.log("API Response:", data);
+            
+                    if (response.ok && (response.status === 200 || response.status === 201)) {
+                        let msg = `New Panel Added successfully.`;
+                        if(localStorage.getItem("edit-panel"))
+                            msg = "Panel Updated successfully"
+                        toastSystem.show({
+                            type: 'success',
+                            title: 'Panel Saved',
+                            message: msg,
+                            duration: 6000
+                        });
+
+                        console.log(response.id);
+
+                        /* const response = await fetch(APIPath + 'panels/translate/' + response.id, {
+                            method: 'PUT', 
+                            headers : {
+                                'Content-Type': 'application/json',
+                                "origin" : "http://localhost:4321",
+                                // "x-api-key" : key,
+                            },
+                        }).then(Response => Response.json());
+
+                        console.log("Translation Status: ", response); */
+                    }
+                    else if(response.status == 500 && data.reason.includes("already exists in table")){
+                        toastSystem.show({
+                            type: 'error',
+                            title: 'Panel already exist',
+                            message: `The slug you are trying to enter already exist in the database.`,
+                            duration: 6000
+                        });
+                    }
+                    else {
+                        // alert("Login failed: " + data.message);
+                        toastSystem.show({
+                            type: 'error',
+                            title: 'Error occured',
+                            message: `An error occured while saving Panel`,
+                            duration: 6000
+                        });
+                    }
+                    isImageRemoved = false;
+                } catch (error) {
+                    // alert("Login failed: " + data.message);
+                    toastSystem.show({
+                        type: 'error',
+                        title: 'Error occured',
+                        message: `An error occured while saving Panel`,
+                        duration: 6000
+                    });
+                }
+
+                modalSystem.closeAll();
+                if(!localStorage.getItem("edit-panel")){
+                    form.reset();
+                    imagePreview.querySelector('button').click(); // Click on the remove image button of featured image
+                    document.querySelector("#reset-btn").click(); // Click on the Hidden reset button of Payment Options
+                    editor.clear();
+                    modifyRating(0);
+                }
+
+                
+            }).catch((error) => {
+                console.log('Saving failed: ', error);
+            });
+            
+        });
+    });
+
+    // Converting Image To Base64
+    function imageFileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onload = () => {
+                resolve(reader.result);
+            };
+
+            reader.onerror = (error) => {
+                reject(error);
+            };
+
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function fetchServicesData() {
+        try {
+            const response = await fetch(APIUrl + "services", {
+                method: "GET",
+                headers: {
+                    'Content-Type': 'application/json',
+                    "origin" : "http://localhost:4321",
+                    // "x-api-key" : key
+                },
+            });
+        
+            const data = await response.json();
+            servicesData = data;
+            console.log("API Response:", servicesData);
+            const servicesSelect = document.querySelector("#services-select-ele");
+
+            servicesData.forEach(services => {
+                servicesSelect.insertAdjacentHTML("beforeend", `<option value="${services.servicetitle}">${services.servicetitle}</option>`)
+            })
+        
+            if (response.ok && response.status === 200) {
+                
+            } else {
+                // alert("Login failed: " + data.message);
+                toastSystem.show({
+                    type: 'error',
+                    title: 'Error occured',
+                    message: `An error occured while fetching services`,
+                    duration: 6000
+                });
+            }
+        } catch (error) {
+            // alert("Login failed: " + data.message);
+            toastSystem.show({
+                type: 'error',
+                title: 'Error occured',
+                message: `An error occured while fetching services`,
+                duration: 6000
+            });
+        }
+    }
+    
+    async function fetchPanelData(panelId){
+        try {
+            const response = await fetch(`${APIUrl}panels/${panelId}`, {
+                method: "GET",
+                headers: {
+                    'Content-Type': 'application/json',
+                    "origin" : "http://localhost:4321",
+                    // "x-api-key" : key
+                },
+            });
+        
+            const data = await response.json();
+            panelData = data;
+            console.log("API Response:", panelData);
+        
+            if (response.ok && response.status === 200) {
+                // Populate the values in the Form Fields
+                document.getElementById("panelTitle").value = panelData.panelTitle;
+                document.getElementById("panelSlug").value = panelData.panelSlug
+                document.getElementById("panelWebsiteURL").value = panelData.panelWebsiteURL
+                document.getElementById('image-preview').querySelector('img').src = imagePath + panelData.panelFeaturedImage
+                document.querySelector('.image-upload-container').classList.add("hidden");
+                document.getElementById('image-preview').classList.remove("hidden");
+
+                document.getElementById("panelAPILink").value = panelData.panelAPILink;
+                document.getElementById("panelAPIKey").value = panelData.panelAPIKey;
+                document.getElementById("panelMetaDescription").value = panelData.panelMetaDescription;
+                
+                // Content in Editor JS
+                let editorJsContent;
+                editorJsContent = {
+                    time: Date.now(),
+                    blocks: []
+                }
+
+                if(Array.isArray(panelData.panelTextDescription)){
+                    editorJsContent = {
+                        time: Date.now(),
+                        blocks: panelData.panelTextDescription
+                    }
+                }
+
+                // Content in Editor JS
+                editor.isReady
+                .then(() => editor.render(editorJsContent))
+                .catch((err) => console.error("Render failed", err));
+                
+                // Rating
+                modifyRating(panelData.rating); 
+                
+                // OtherRatings
+                let ratingDataJSON = panelData.ratingOtherSites 
+                trustpilotInputs[0].value = ratingDataJSON[0]?.score || "";
+                trustpilotInputs[1].value = ratingDataJSON[0]?.TotalReviews || "";
+                trustpilotInputs[2].value = ratingDataJSON[0]?.ratingURL || "";
+                SitejabberInputs[0].value = ratingDataJSON[1]?.score || "";
+                SitejabberInputs[1].value = ratingDataJSON[1]?.TotalReviews || "";
+                SitejabberInputs[2].value = ratingDataJSON[1]?.ratingURL || "";
+                ReviewsioInputs[0].value =  ratingDataJSON[2]?.score || "";
+                ReviewsioInputs[1].value =  ratingDataJSON[2]?.TotalReviews || "";
+                ReviewsioInputs[2].value =  ratingDataJSON[2]?.ratingURL || "";
+                
+                existingData = panelData.paymentOptions; // Payment Options
+            } else {
+                // alert("Login failed: " + data.message);
+                toastSystem.show({
+                    type: 'error',
+                    title: 'Error occured',
+                    message: `An error occured while fetching services`,
+                    duration: 6000
+                });
+            }
+        } catch (error) {
+            // alert("Login failed: " + data.message);
+            console.log(error);
+            
+            toastSystem.show({
+                type: 'error',
+                title: 'Error occured',
+                message: `An error occured while fetching services`,
+                duration: 6000
+            });
+        }
+    }
+</script>

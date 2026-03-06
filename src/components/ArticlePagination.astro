@@ -1,0 +1,104 @@
+---
+import { metaData } from '../pages/data';
+import { metaDataEs } from '../pages/es/data';
+import { metaDataFr } from '../pages/fr/data';
+import { metaDataPt } from '../pages/pt/data';
+import { metaDataRu } from '../pages/ru/data';
+import { metaDataZh } from '../pages/zh/data';
+import { metaDataHi } from '../pages/hi/data';
+import { metaDataBn } from "../pages/bn/data";
+import { metaDataUr } from "../pages/ur/data";
+import { metaDataId } from "../pages/id/data";
+
+interface Props {
+    paginationData : any
+    lang ?: string;
+}
+
+const {paginationData, lang = "en"} = Astro.props;
+
+let contentPath;
+if(lang == "en") contentPath = metaData;
+else if(lang == "ru") contentPath = metaDataRu;
+else if(lang == "zh") contentPath = metaDataZh
+else if(lang == "es") contentPath = metaDataEs
+else if(lang == "fr") contentPath = metaDataFr
+else if(lang == "pt") contentPath = metaDataPt
+else if(lang == "hi") contentPath = metaDataHi
+else if(lang == "bn") contentPath = metaDataBn
+else if(lang == "ur") contentPath = metaDataUr
+else if(lang == "id") contentPath = metaDataId
+
+const { currentPage, lastPage, url } = paginationData;
+---
+
+<style>
+    .box-shadow{
+        box-shadow: 0 0 10px 2px #5fb353;
+    }
+</style>
+<div
+    class="article-paginations dark:text-white flex lg:flex-row flex-col-reverse justify-center items-center gap-3 w-full p-5 py-7 rounded-lg bg-[#d3d3d3] dark:bg-[#202123] shadow-sm shadow-[#000000be] animate-on-scroll">
+    <span class="pageCounter font-semibold rounded-full p-3 lg:p-7 py-2 lg:py-3 border-2 border-white text-sm uppercase hover:scale-105 transition-all ease-in-out duration-300">
+        {contentPath?.text[30]} {currentPage} of {lastPage}
+    </span>
+
+    <ul class="flex gap-3">
+        {
+            url.prev &&
+            <li>
+                <a
+                class="flex justify-center items-center size-10 cursor-pointer rounded-full relative bg-bodyBg2-light hover:bg-[#5fb353] hover:scale-105 transition-all ease-in-out duration-300"
+                href={url.prev}><i class="fa-solid fa-angles-left"></i></a>
+            </li>
+        }
+
+        {
+            //Previous Pages
+           url.prev &&
+           <li>
+               <a
+               class="flex justify-center items-center size-10 cursor-pointer rounded-full relative dark:bg-[#2c2c2c] bg-[#a0a0a0] hover:bg-[#5fb353] hover:scale-105 transition-all ease-in-out duration-300" 
+               href={url.prev}>{currentPage - 1}</a>
+           </li>
+
+        }
+
+        {
+            //Current Page
+            <li>
+                <span class="flex font-semibold justify-center items-center size-10 cursor-pointer rounded-full relative dark:bg-[#2c2c2c] bg-[#a0a0a0] border-2 dark:border-[#2c2c2c] box-shadow hover:bg-[#5fb353] hover:scale-105 transition-all ease-in-out duration-300">{currentPage}</span>
+            </li>
+        }
+
+        {
+            //Next Pages
+           url.next &&
+           <li>
+               <a
+               class="flex justify-center items-center size-10 cursor-pointer rounded-full relative dark:bg-[#2c2c2c] bg-[#a0a0a0] hover:bg-[#5fb353] hover:scale-105 transition-all ease-in-out duration-300" 
+               href={url.next}>{currentPage + 1}</a>
+           </li>
+        
+        }
+
+        {
+            (url.last && url.next != url.last) && 
+            <li>...</li>
+            <li>
+               <a
+               class="flex justify-center items-center size-10 cursor-pointer rounded-full relative dark:bg-[#2c2c2c] bg-[#a0a0a0] hover:bg-[#5fb353] hover:scale-105 transition-all ease-in-out duration-300" 
+               href={url.last}>{lastPage}</a>
+            </li>
+        }
+
+        {
+            url.next &&
+            <li>
+                <a
+                class="flex justify-center items-center size-10 cursor-pointer rounded-full relative dark:bg-[#2c2c2c] bg-[#a0a0a0] hover:bg-[#5fb353] hover:scale-105 transition-all ease-in-out duration-300" 
+                href={url.next}><i class="fa-solid fa-angles-right"></i></a>
+            </li>
+        }
+    </ul>
+</div>

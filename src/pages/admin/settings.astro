@@ -1,0 +1,736 @@
+---
+import { isAdminLoggedIn } from "../../data/admin-utils";
+import { getAPIPath, getImageBasePath} from "../../data/utils";
+import AdminLayout from "../../layouts/AdminLayout.astro";
+
+const adminCookie = Astro.cookies.get("admin");
+
+//#region Authentication
+if(!isAdminLoggedIn(adminCookie)){
+    return Astro.redirect("/admin/login");
+}
+
+const response = await fetch(getAPIPath() + `auth/validate`, {
+	method: "POST",
+    body : JSON.stringify({ userId : adminCookie?.value}),
+    headers : {
+        'Content-Type': 'application/json',
+        "origin" : "http://localhost:4321",
+        "x-api-key" : import.meta.env.API_SECURITY_KEY
+    }
+}).then(res => res.json());
+
+// console.log(response);
+
+if(response.status !== 200 && response.isValid !== true){
+    return Astro.redirect("/admin/login");
+}
+//#endregion
+
+---
+
+<style is:inline>
+    .settings-section {
+        transition: all 0.3s ease;
+    }
+
+    .settings-section:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .tab-button {
+        transition: all 0.3s ease;
+    }
+
+    .tab-button.active {
+        background-color: #3b82f6;
+        color: white;
+    }
+
+    .tab-content {
+        display: none;
+        transition: all 0.3s ease;
+    }
+
+    .tab-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .toggle-checkbox:checked {
+        right: 0;
+        border-color: #3b82f6;
+    }
+
+    .toggle-checkbox:checked+.toggle-label {
+        background-color: #3b82f6;
+    }
+    .toggle-checkbox:checked+.toggle-label>span{
+        transform: translateX(1.5rem);
+    }
+
+    .editor-container {
+        min-height: 400px;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+</style>
+<AdminLayout PageTitle="Settings" PageHeader="Settings" UserName={response.user.fullname || response.user.username} avatarImagePath={getImageBasePath() + response.user.ProfilePic} emailAdd = {response.user.email}>
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex lg:items-center lg:justify-between gap-4 lg:flex-row flex-col">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Settings</h1>
+                    <p class="text-gray-600">Manage your website configuration and preferences</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button type="button" id="save-settings"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center">
+                        <i class="fas fa-save mr-2"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Settings Sidebar -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl shadow-sm p-6 sticky top-8">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Configuration</h3>
+                    <nav class="space-y-2">
+                        <button
+                            class="tab-button w-full text-left px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 active"
+                            data-tab="general">
+                            <i class="fas fa-cog mr-3"></i> General Settings
+                        </button>
+                        <button class="tab-button w-full text-left px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100"
+                            data-tab="email">
+                            <i class="fas fa-envelope mr-3"></i> Email Settings
+                        </button>
+                        <button class="tab-button w-full text-left px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100"
+                            data-tab="ads">
+                            <i class="fa-solid fa-image-stack mr-3"></i>  Placing Ad Units
+                        </button>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Settings Content -->
+            <div class="lg:col-span-3">
+                <form id="settings-form">
+                    <!-- General Settings -->
+                    <div id="general" class="tab-content active">
+                        <div class="hover:-translate-y-0.5 hover:shadow-sm bg-white rounded-xl shadow-sm p-6 settings-section">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-6">General Settings</h2>
+                            
+                            <div class="grid grid-cols-1 gap-6">
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-medium mb-2">Site Title</label>
+                                    <input type="text" name="SiteTitle" id="SiteTitle"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="My Awesome Store">
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6">
+                                <label class="block text-gray-700 text-sm font-medium mb-2">Site Meta Description (For SEO)</label>
+                                <textarea name="SiteMetaDescription" id="SiteMetaDescription"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                rows="3" placeholder="We offer the best products with excellent customer service and fast shipping."></textarea>
+                            </div>
+
+                            <div class="mt-6">
+                                <label class="block text-gray-700 text-sm font-medium mb-2">(Webhook) Site Rebuilder Link</label>
+                                <input type="text" name="siteDeployHook" id="siteDeployHook"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="http://128.140.35.62:4322/webhook2">
+                            </div>
+                           
+                        </div>
+
+                        <div class="hover:-translate-y-0.5 hover:shadow-sm bg-white mt-10 rounded-xl shadow-sm p-6">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-6">Page Settings</h2>
+                            
+                            <div class="space-y-6">
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-gray-700 text-sm font-medium mb-2">Number of Panels to show in Home Page</label>
+                                        <input type="number" name="siteHomePanelCount" id="siteHomePanelCount"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="10" step="1">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm font-medium mb-2">Number of Panels to be shown in Pagination</label>
+                                        <input type="number" name="sitePanelCount" id="sitePanelCount"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="25" step="1">
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </div>
+
+                        <div class="hover:-translate-y-0.5 hover:shadow-sm bg-white mt-10 rounded-xl shadow-sm p-6 settings-section">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-6">Setup your Header/Navbar layout</h2>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                                <!-- Site Logo Image -->
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <h3 class="text-lg font-medium text-gray-900 mb-4">Site Logo Image</h3>
+                                    
+                                    <div
+                                    class="image-upload-container border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-[#3b82f6]">
+                                    <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                    <p class="text-sm text-gray-600">Click to upload or drag and drop</p>
+                                    <p class="text-xs text-gray-500">SVG, PNG, JPG or GIF (max. 5MB)</p>
+                                    <input type="file" class="hidden" id="site-logo-image-upload" name="logoImage">
+                                </div>
+                                
+                                <div id="logo-image-preview" class="hidden mt-4">
+                                    <img src="" alt="Site Logo image preview" class="rounded-lg max-h-48 mx-auto">
+                                        <button type="button" class="mt-2 text-red-600 text-sm">
+                                            <i class="fas fa-trash mr-1"></i> Remove image
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Site Favicon Image -->
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <h3 class="text-lg font-medium text-gray-900 mb-4">Site Favicon Image</h3>
+                                    
+                                    <div
+                                    class="image-upload-container border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-[#3b82f6]">
+                                    <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                    <p class="text-sm text-gray-600">Click to upload or drag and drop</p>
+                                    <p class="text-xs text-gray-500">SVG, PNG, JPG or GIF (max. 5MB)</p>
+                                    <input type="file" class="hidden" id="site-favicon-image-upload" name="faviconImage">
+                                </div>
+                                
+                                <div id="favicon-image-preview" class="hidden mt-4">
+                                    <img src="" alt="Site Favicon image preview" class="rounded-lg max-h-48 mx-auto">
+                                        <button type="button" class="mt-2 text-red-600 text-sm">
+                                            <i class="fas fa-trash mr-1"></i> Remove image
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Email Settings -->
+                    <div id="email" class="tab-content hover:-translate-y-0.5 hover:shadow-sm">
+                        <div class="bg-white rounded-xl shadow-sm p-6 settings-section">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-6">Email Settings</h2>
+                            
+                            <div class="space-y-6">
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-gray-700 text-sm font-medium mb-2">Email From Name</label>
+                                        <input type="text" id="emailFrom" name="emailFrom"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Email Sender Name">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm font-medium mb-2">Subject Line</label>
+                                        <input type="text" id="emailSubject" name="emailSubject"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Subject Line">
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-6">
+                                    <label class="block text-gray-700 text-sm font-medium mb-2">Email Content</label>
+                                    <div id="editorjs" class="editor-container"></div>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+    
+                    <!-- Ads Settings -->
+                    <div id="ads" class="tab-content hover:-translate-y-0.5 hover:shadow-sm">
+                        <div class="bg-white rounded-xl shadow-sm p-6 settings-section">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-6">Setup Ads Unit placing</h2>
+                            <span>Not implemented yet. Contact Developer, for deciding ads placing positions</span>
+                            <div class="space-y-6"></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Editor.js -->
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@editorjs/underline@latest"></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@editorjs/embed@latest"></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@editorjs/marker@latest"></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@latest"></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@editorjs/raw@latest"></script>
+
+    <script is:inline>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Tab switching functionality
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const targetTab = this.getAttribute('data-tab');
+
+                    // Remove active class from all buttons and contents
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+
+                    // Add active class to clicked button and target content
+                    this.classList.add('active');
+                    document.getElementById(targetTab).classList.add('active');
+                });
+            });
+
+            // Toggle switch functionality
+            document.querySelectorAll('.toggle-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    const label = this.nextElementSibling;
+                    const span = label.querySelector('span');
+
+                    if (this.checked) {
+                        span.style.transform = 'translateX(1.5rem)';
+                    } else {
+                        span.style.transform = 'translateX(0)';
+                    }
+                });
+            });
+
+            // Initialize toggle switches
+            document.querySelectorAll('.toggle-checkbox').forEach(checkbox => {
+                if (checkbox.checked) {
+                    const span = checkbox.nextElementSibling.querySelector('span');
+                    span.style.transform = 'translateX(1.5rem)';
+                }
+            });
+
+            // Email Initialize Editor.js
+            editor = new EditorJS({
+                holder: 'editorjs',
+                tools: {
+                    header: {
+                        class: Header,
+                        config: {
+                            placeholder: 'Enter a header',
+                            levels: [1, 2, 3, 4],
+                            defaultLevel: 2
+                        }
+                    },
+                    List: {
+                        class: EditorjsList,
+                        inlineToolbar: true,
+                        config: {
+                            defaultStyle: 'unordered'
+                        },
+                    },
+                    embed: {
+                        class: Embed,
+                        config: {
+                            services: {
+                                youtube: true,
+                                coub: true
+                            }
+                        }
+                    },
+                    quote: {
+                        class: Quote,
+                        inlineToolbar: true,
+                        config: {
+                            quotePlaceholder: 'Enter a quote',
+                            captionPlaceholder: 'Quote\'s author',
+                        },
+                    },
+                    marker: {
+                        class: Marker,
+                        shortcut: 'CMD+SHIFT+M',
+                    },
+                    delimiter: {
+                        class: Delimiter,
+                    },
+                },
+                placeholder: 'We offer the best products with excellent customer service and fast shipping...',
+                autofocus: true,
+
+            });
+            
+        });
+
+        // Get DOM elements
+        const siteLogoUpload = document.getElementById('site-logo-image-upload');
+        const siteFaviconUpload = document.getElementById('site-favicon-image-upload');
+        const logoUploadContainer = document.querySelector('#site-logo-image-upload').closest('.image-upload-container');
+        const faviconUploadContainer = document.querySelector('#site-favicon-image-upload').closest('.image-upload-container');
+        const logoPreview = document.getElementById('logo-image-preview');
+        const faviconPreview = document.getElementById('favicon-image-preview');
+        const logoPreviewImg = logoPreview.querySelector('img');
+        const faviconPreviewImg = faviconPreview.querySelector('img');
+        const logoRemoveBtn = logoPreview.querySelector('button');
+        const faviconRemoveBtn = faviconPreview.querySelector('button');
+
+        let LOGObase64String;
+        let LOGOfileType;
+        let LOGOisImageRemoved = false;
+
+        let FAVICONbase64String;
+        let FAVICONfileType;
+        let FAVICONisImageRemoved = false;
+
+        // File validation function
+        function validateFile(file) {
+            const validTypes = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/gif'];
+            const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+            
+            if (!validTypes.includes(file.type)) {
+                alert('Please select a valid image file (SVG, PNG, JPG, or GIF)');
+                return false;
+            }
+            
+            if (file.size > maxSize) {
+                alert('File size must be less than 5MB');
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Handle file selection and preview
+        function handleFileSelect(file, previewImg, previewContainer, uploadContainer) {
+            if (!validateFile(file)) return;
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                previewContainer.classList.remove('hidden');
+                uploadContainer.classList.add('hidden');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        // Remove image and reset uploader
+        function removeImage(previewContainer, uploadContainer) {
+            previewContainer.classList.add('hidden');
+            uploadContainer.classList.remove('hidden');
+            
+            // Clear the file input
+            const fileInput = uploadContainer.querySelector('input[type="file"]');
+            fileInput.value = '';
+        }
+
+        // Set up drag and drop functionality
+        function setupDragAndDrop(uploadContainer, fileInput, previewImg, previewContainer) {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadContainer.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadContainer.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadContainer.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                uploadContainer.classList.add('border-[#3b82f6]', 'bg-blue-50');
+            }
+            
+            function unhighlight() {
+                uploadContainer.classList.remove('border-[#3b82f6]', 'bg-blue-50');
+            }
+            
+            uploadContainer.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length) {
+                    handleFileSelect(files[0], previewImg, previewContainer, uploadContainer);
+                }
+            }
+        }
+
+        // Event listeners for file inputs
+        siteLogoUpload.addEventListener('change', async function(e) {
+            if (this.files && this.files[0]) {
+                LOGOfileType = (this.files[0].name.split(".")[this.files[0].name.split(".").length - 1]);
+                LOGObase64String = await imageFileToBase64(this.files[0]);
+                LOGOisImageRemoved = false;
+                handleFileSelect(this.files[0], logoPreviewImg, logoPreview, logoUploadContainer);
+            }
+        });
+
+        siteFaviconUpload.addEventListener('change', async function(e) {
+            if (this.files && this.files[0]) {
+                FAVICONfileType = (this.files[0].name.split(".")[this.files[0].name.split(".").length - 1]);
+                FAVICONbase64String = await imageFileToBase64(this.files[0]);
+                FAVICONisImageRemoved = false;
+                handleFileSelect(this.files[0], faviconPreviewImg, faviconPreview, faviconUploadContainer);
+            }
+        });
+
+        // Event listeners for click on upload containers
+        logoUploadContainer.addEventListener('click', function() {
+            siteLogoUpload.click();
+        });
+
+        faviconUploadContainer.addEventListener('click', function() {
+            siteFaviconUpload.click();
+        });
+
+        // Event listeners for remove buttons
+        logoRemoveBtn.addEventListener('click', function(e) {
+            debugger
+            e.stopPropagation();
+            LOGOisImageRemoved = true;
+            LOGObase64String = null;
+            removeImage(logoPreview, logoUploadContainer);
+        });
+
+        faviconRemoveBtn.addEventListener('click', function(e) {
+            debugger
+            e.stopPropagation();
+            FAVICONisImageRemoved = true;
+            FAVICONbase64String = null;
+            removeImage(faviconPreview, faviconUploadContainer);
+        });
+
+        // Converting Image To Base64
+        function imageFileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+            
+                reader.onload = () => {
+                    resolve(reader.result);
+                };
+            
+                reader.onerror = (error) => {
+                    reject(error);
+                };
+            
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // Initialize drag and drop for both uploaders
+        setupDragAndDrop(logoUploadContainer, siteLogoUpload, logoPreviewImg, logoPreview);
+        setupDragAndDrop(faviconUploadContainer, siteFaviconUpload, faviconPreviewImg, faviconPreview);
+    </script>
+</AdminLayout>
+
+<script is:inline define:vars={{
+    key:import.meta.env.API_SECURITY_KEY, 
+    settingsID :import.meta.env.SITESETTINGSKEY, 
+    APIUrl : getAPIPath(), 
+    imagePath : getImageBasePath() 
+    }}>
+
+    // Function to fetch Setting from API
+    async function fetchSettingsData() {
+        try {
+            // Replace with your actual API endpoint
+            const response = await fetch(APIUrl + `siteSettings/` + settingsID, {
+                method: "GET",
+                headers: {
+                    'Content-Type': 'application/json',
+                    "origin" : "http://localhost:4321",
+                    // "x-api-key" : key
+                },
+            });
+            const user = await response.json();
+            console.log(user);
+
+            document.getElementById("SiteTitle").value = user.SiteTitle || "";
+            document.getElementById("SiteMetaDescription").value = user.siteMetaDescription || "";
+            document.getElementById("siteDeployHook").value = user.siteDeployHook || "";
+            
+            document.getElementById("siteHomePanelCount").value = user.homePanelCount || "";
+            document.getElementById("sitePanelCount").value = user.sitePanelCount || "";
+
+            if(user.emailAutoReplyContent){
+                document.getElementById("emailFrom").value = user.emailAutoReplyContent.emailFrom || "";
+                document.getElementById("emailSubject").value = user.emailAutoReplyContent.emailSubject || "";
+                // Email Content in Editor JS
+                
+                editor.isReady
+                .then(() => editor.render({
+                    time: Date.now(),
+                    blocks: user.emailAutoReplyContent.emailJs_Content || []
+                }))
+                .catch((err) => console.error("Render failed", err));
+            }
+
+            if(user.siteLog){
+                logoPreviewImg.src =  imagePath + user.siteLog;
+                logoPreview.classList.remove("hidden");
+                logoUploadContainer.classList.add("hidden");
+            }
+            if(user.siteFavicon){
+                faviconPreviewImg.src = imagePath +  user.siteFavicon;
+                faviconPreview.classList.remove("hidden");
+                faviconUploadContainer.classList.add("hidden");
+            }
+
+        } catch (error) {
+            console.error('Error fetching users:', error);
+        }
+    }
+
+    // Update User Data
+    async function updateSettings(id, data) {
+        const obj = Object.fromEntries(data.entries());
+        // console.log(obj);
+        
+        const formDataObj = {
+            siteData : {
+                SiteTitle : obj.SiteTitle,
+                SiteMetaDescription : obj.SiteMetaDescription,
+                siteDeployHook : obj.siteDeployHook,
+                logoImage : "siteLogo",
+                faviconImage : "siteFavicon",
+                siteHomePanelCount : parseInt(obj.siteHomePanelCount),
+                sitePanelCount : parseInt(obj.sitePanelCount),
+            },
+            emailData : {
+                emailFrom : obj.emailFrom,
+                emailJs_Content : JSON.parse(obj.emailJs_Content),
+                emailSubject : obj.emailSubject
+            },
+            MetaData : {
+                
+            }
+        }
+
+        debugger
+        if(LOGObase64String){
+            formDataObj.MetaData.LOGObase64String = LOGObase64String;
+            formDataObj.MetaData.LOGOfileType = LOGOfileType;
+        }
+        if(FAVICONbase64String){
+            formDataObj.MetaData.FAVICONbase64String = FAVICONbase64String;
+            formDataObj.MetaData.FAVICONfileType = FAVICONfileType;
+        }
+        
+        if(LOGOisImageRemoved)
+            formDataObj.MetaData.LOGOisImageRemoved = LOGOisImageRemoved;
+        if(FAVICONisImageRemoved)
+            formDataObj.MetaData.FAVICONisImageRemoved = FAVICONisImageRemoved;
+
+        console.log(formDataObj);
+        
+        try {
+            // Replace with your actual API endpoint
+            const response = await fetch(APIUrl + `siteSettings/${id}`, {
+                method: "PUT",
+                headers: {
+                    'Content-Type': 'application/json',
+                    "origin" : "http://localhost:4321",
+                    // "x-api-key" : key
+                },
+                body : JSON.stringify(formDataObj)
+            });
+            const users = await response.json();
+            console.log(users);
+            
+            debugger
+            if (response.ok && response.status === 200) {
+                return "success"
+            } else {
+                return "failed"
+            }
+
+        } catch (error) {
+            console.error('Error while updating user:', error);
+        }
+    }
+
+    // Save settings button
+    document.getElementById('save-settings').addEventListener('click', async function () {
+        const form = document.getElementById('settings-form');
+        const formData = new FormData(form);
+
+        await editor.save().then(async (outputData) => {
+            formData.append("emailJs_Content", JSON.stringify(outputData.blocks)
+                .replaceAll("&nbsp;", " ")
+                .replaceAll("  ", " ")
+                .replaceAll("  ", " ")
+            );
+        })
+
+        showLoadingModal()
+        let originalText = "";
+        setTimeout(() => {
+            updateSettings(settingsID , formData).then(resp => {
+                if (resp === 'success'){
+                    toastSystem.show({
+                        type: 'success',
+                        title: 'Data updated',
+                        message: `Profile information updated successfully`,
+                        duration: 6000
+                    });
+                }
+                else{
+                    toastSystem.show({
+                        type: 'error',
+                        title: 'Error occured',
+                        message: `An error occured while updating the user`,
+                        duration: 6000
+                    });
+                }
+
+                LOGOisImageRemoved = false;
+                FAVICONisImageRemoved = false;
+            });
+            
+            // Show loading state
+            originalText = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving...';
+            this.disabled = true;
+            modalSystem.closeAll();
+        }, 1500);
+
+         setTimeout(() => {
+            this.innerHTML = originalText;
+            this.disabled = false;
+        }, 1500);
+    })
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+        fetchSettingsData()
+    });
+</script>

@@ -1,0 +1,20 @@
+---
+
+---
+
+<div class="input-group">
+    <label class="block text-gray-700 text-sm font-medium mb-2">Pick a Color <span id="hexValue">#000000</span></label>
+    <div class="flex space-x-3 justify-center">
+        <input type="color" name="serviceColor" id="serviceColor"
+            class="cursor-pointer rounded-full size-10 border-2 border-gray-500" />
+    </div>
+</div>
+
+<script is:inline>
+    const picker = document.getElementById('serviceColor');
+    const hex = document.getElementById('hexValue');
+
+    picker.addEventListener('input', function () {
+        hex.textContent = picker.value; // value is already a hex string
+    });
+</script>

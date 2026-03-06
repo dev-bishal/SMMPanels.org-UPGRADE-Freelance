@@ -1,0 +1,329 @@
+---
+import SearchForm from "../../components/SearchForm.astro";
+import { getAPIPath } from "../../data/utils";
+import MainLayout from "../../layouts/MainLayout.astro";
+const allSiteFetch: any = await fetch(getAPIPath() + "siteSettings/" + import.meta.env.SITESETTINGSKEY).then(
+(Response) => Response.json(),
+);
+
+// const allPanelsFetch: any = await fetch(getAPIPath() + "panels").then(
+const allPanelsFetch: any = await fetch("https://smmpanels-admin.vercel.app/api/panels").then(
+    (Response) => Response.json(),
+);
+---
+
+<style>
+    .sort-indicator::after {
+        content: "";
+        display: inline-block;
+        margin-left: 4px;
+        border: 5px solid transparent;
+    }
+
+    .sort-asc .sort-indicator::after {
+        border-bottom-color: #000;
+    }
+
+    .sort-desc .sort-indicator::after {
+        border-top-color: #000;
+    }
+</style>
+
+<MainLayout 
+    siteTitle = {allSiteFetch.SiteTitle} pageType="page" lang="en" title={`Search Services on ${allSiteFetch.SiteTitle}`} metaDescription=`Search among Best SMM Panels, and SMM
+    Services on ${allSiteFetch.SiteTitle}`>
+
+    <div class="content-wrapper text-white flex flex-wrap lg:justify-start justify-center gap-5 my-6 px-5 lg:mt-24 mt-20">
+        <article class="flex flex-col gap-5 w-full">
+
+            <div class="text-center p-5 lg:w-full w-[89vw] overflow-auto z-[1]">
+                <h1 class="searchResTitle text-2xl font-semibold"></h1>
+            </div>
+            <div class="searchBox flex justify-center items-center">
+                <div class="wrapper lg:w-1/2 w-full">
+                    <SearchForm searchPagePath={"/services/search"} />
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div id="FiltersElementsHolder" class="z-[1] w-full pt-4 gap-4 items-center flex-wrap justify-between shadow mt-5 rounded-md dark:bg-[#515151] bg-[#7f7f7f] p-3 hidden">
+                    <div>
+                        <label class="mr-2 font-medium">Filter by Rating:</label>
+                        <select id="ratingFilter" class="border p-1 rounded text-black">
+                            <option value="">All Ratings</option>
+                            <option value="5">⭐ 5 Stars</option>
+                            <option value="4">⭐ 4 Stars & above</option>
+                            <option value="3">⭐ 3 Stars & above</option>
+                            <option value="2">⭐ 2 Stars & above</option>
+                            <option value="1">⭐ 1 Star & above</option>
+                        </select>
+    
+                        <div class="mt-6">
+                            <label class="flex items-center gap-2 cursor-pointer select-none w-fit">
+                                <input id="newArrivalFilter" type="checkbox" class="sr-only peer">
+
+                                <div class="block relative bg-gray-300 w-11 h-6 p-1 rounded-full 
+                                    before:top-[0.15rem]
+                                    before:absolute before:bg-white before:w-5 before:h-5 before:p-1 before:rounded-full before:transition-all before:duration-500 before:left-1 peer-checked:before:left-[1.4rem] peer-checked:bg-blue-500"></div>
+
+                                <span class="text-sm text-white">Only Show Newest Arrivals</span>
+                              </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="mr-2 font-medium">Results per page:</label>
+                        <select id="resultsPerPage" class="border p-1 rounded text-black">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+            </div> 
+
+            <div class="services-table-holder text-center lg:w-full w-[89vw] overflow-auto z-[1] mx-auto mt-5 rounded-md dark:bg-[#515151] bg-[#7f7f7f] p-3">
+
+                    <!-- Loader -->
+                    <div id="loader" class="flex flex-col gap-2 justify-center items-center py-10">
+                        <div class="animate-spin rounded-full h-10 w-10 border-4 border-white border-t-transparent"></div>
+                        <p id="loaderText" class="text-white text-sm">Please wait... 0% Loaded</p>
+                    </div>             
+
+                    <!-- Table -->
+                    <div class="p-4 hidden" id="tableHeader">
+                        <table class="w-full table-auto text-left shadow rounded">
+                            <thead>
+                                <tr class="offerHeader w-full bg-[#000000b9] font-semibold text-white rounded-sm">
+                                    <th class="p-4 cursor-pointer lg:w-max-[500px]" data-sort="serviceName">Service Name ⬍</th>
+                                    <th class="p-4 cursor-pointer" data-sort="serviceMin">Min Order ⬍</th>
+                                    <th class="p-4 cursor-pointer" data-sort="serviceMax">Max Order ⬍</th>
+                                    <th class="p-4 cursor-pointer" data-sort="serviceRate">Rate per 1000 ⬍</th>
+                                    <th class="p-4 text-center">Panel</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody"></tbody>
+                        </table>
+                    </div>                  
+
+            </div>
+
+            <!-- Pagination -->
+            <div id="PaginationElementHolder" class="p-4 justify-between items-center w-full hidden">
+                <button id="prevPage" class="bg-[#0056b3] text-white px-4 py-1 rounded disabled:opacity-50"><i class="fa-duotone fa-chevrons-left"></i> Previous</button>
+                <span id="pageIndicator" class="font-semibold"></span>
+                <button id="nextPage" class="bg-[#0056b3] text-white px-4 py-1 rounded disabled:opacity-50">Next <i class="fa-duotone fa-chevrons-right"></i></button>
+            </div>
+
+
+        </article>
+    </div>
+</MainLayout>
+
+<script is:inline define:vars={{panelsData : allPanelsFetch}}>
+    
+    const loader = document.getElementById("loader");
+    const loaderText = document.getElementById("loaderText");
+    const tableBody = document.getElementById('tableBody');
+    const ratingFilter = document.getElementById('ratingFilter');
+    const newArrivalFilter = document.getElementById('newArrivalFilter');
+    const resultsPerPage = document.getElementById('resultsPerPage');
+    const pageIndicator = document.getElementById('pageIndicator');
+    const prevPage = document.getElementById('prevPage');
+    const nextPage = document.getElementById('nextPage');
+
+    let services = [];
+    let currentPage = 1;
+    let sortKey = '';
+    let sortAsc = true;
+
+    function getQueryParam() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('q') || '';
+    }
+
+    const getPanelAttribute = (searchSlug) => {
+        const result = panelsData.find(item => item.panelSlug.replaceAll("-","").split(".")[0] === searchSlug.replaceAll("-","").split(".")[0]);
+        return result;
+    };
+
+    async function fetchData() {
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += Math.floor(Math.random() * 10) + 1;
+            if (progress > 90) progress = 97;
+            loaderText.textContent = `Please wait... ${progress}% Loaded`;
+        }, 200);
+
+        const query = getQueryParam();
+        // const url = `https://smmpanelsnet.vercel.app/api/panelServices/search_${query.toLowerCase()}`;
+        const url = `https://smmpanels-org-cron.vercel.app/api/panelServices/search_${query.toLowerCase()}`;
+        const res = await fetch(url);
+        
+        const data = await res.json();
+        loaderText.textContent = `Please wait... 95% Loaded`;
+        clearInterval(progressInterval);
+        loaderText.textContent = `Please wait... 100% Loaded`;
+        document.querySelector(".searchResTitle").textContent = "Search results-"
+        setTimeout(() => loader.style.display = "none", 300);
+        document.querySelector("#tableHeader").classList.remove("hidden");
+        document.querySelector("#FiltersElementsHolder").classList.remove("hidden");
+        document.querySelector("#FiltersElementsHolder").classList.add("flex");
+        document.querySelector("#PaginationElementHolder").classList.remove("hidden");
+        document.querySelector("#PaginationElementHolder").classList.add("flex");
+
+        services = data.combinedArray || [];
+        shuffle(services)
+        services.forEach(service => {
+            let otherData = getPanelAttribute(service.panelSlug);
+            service.rating = otherData.rating;
+            service.panelFeaturedImage = otherData.panelFeaturedImage;
+        });
+        
+        loader.style.display = 'none';
+        renderTable();
+    }
+
+    function sortData() {
+        if (!sortKey) return;
+        services.sort((a, b) => {
+            let valA = a[sortKey];
+            let valB = b[sortKey];
+
+            if (sortKey === "serviceRate" || sortKey === "serviceMin" || sortKey === "serviceMax") {
+                valA = parseFloat(valA);
+                valB = parseFloat(valB);
+            }
+
+            if (valA < valB) return sortAsc ? -1 : 1;
+            if (valA > valB) return sortAsc ? 1 : -1;
+            return 0;
+        });
+    }
+
+    function renderTable() {
+        sortData();
+
+        const rating = parseInt(ratingFilter.value) || 0;
+        const filterNew = newArrivalFilter.checked;
+        const perPage = parseInt(resultsPerPage.value);
+        const now = new Date();
+
+        const filtered = services.filter(s => {
+            const sRating = parseInt(s.rating);
+            const sDate = new Date(s.serviceUploadDate);
+            const isNew = (now - sDate) / (1000 * 3600 * 24) <= 7;
+            return sRating >= rating && (!filterNew || isNew);
+        });
+
+        const total = filtered.length;
+        const start = (currentPage - 1) * perPage;
+        const end = start + perPage;
+        const pageItems = filtered.slice(start, end);
+
+        tableBody.innerHTML = '';
+        pageItems.forEach(service => {
+
+            const uploadDate = new Date(service.serviceUploadDate);
+            const today = new Date();
+            const daysAgo = Math.floor((today - uploadDate) / (1000 * 60 * 60 * 24));
+
+            const addedText = daysAgo < 7
+            ? `<div class="text-xs text-blue-300">(added ${daysAgo === 0 ? "today" : daysAgo + " day" + (daysAgo > 1 ? "s" : "") + " ago"})</div>`
+            : "";
+
+            const tr = document.createElement('tr');
+            tr.className = 'offerList w-full border-b border-[#9ca3af4f] hover:bg-[#9ca3af4f] rounded-md cursor-default text-sm';
+            tr.setAttribute('data-rating', service.rating);
+            tr.setAttribute('data-upload-date', service.serviceUploadDate);
+
+            tr.innerHTML = `
+          <td class="p-4 lg:w-max-[500px]">
+            <div>${service.serviceName}</div>
+            ${addedText}  
+          </td>
+          <td class="p-4 text-center">${service.serviceMin}</td>
+          <td class="p-4 text-center">${service.serviceMax}</td>
+          <td class="p-4 text-center">$${service.serviceRate}</td>
+          <td class="p-4 text-center">
+            <span class="group flex flex-col justify-center items-center panel-links transition-all ease-in-out">
+                <a class="hover:underline hover:font-semibold" href=${`/panels/` + service.panelSlug }>
+                    <img src=${optimizeImageUrl(service.panelFeaturedImage)} alt=${service.panelName} class="rounded-md w-16"/>
+                </a>
+                <span class="p-1 gap-4 text-xs justify-between items-center flex-col flex invisible group-hover:visible">
+                    <a rel="nofollow" class="hover:underline hover:font-semibold" target="_blank" href=${service.panelRefUrl}>${service.panelName} <i class="fa-solid fa-up-right"></i></a>
+                </span>
+            </span>
+          </td>
+        `;
+            tableBody.appendChild(tr);
+        });
+
+        pageIndicator.innerText = `Showing ${start + 1} to ${Math.min(end, total)} of ${total} results`;
+        prevPage.disabled = currentPage === 1;
+        nextPage.disabled = end >= total;
+    }
+
+    // Event Listeners
+    ratingFilter.addEventListener('change', () => {
+        currentPage = 1;
+        renderTable();
+    });
+
+    newArrivalFilter.addEventListener('change', () => {
+        currentPage = 1;
+        renderTable();
+    });
+
+    resultsPerPage.addEventListener('change', () => {
+        currentPage = 1;
+        renderTable();
+    });
+
+    prevPage.addEventListener('click', () => {
+        if (currentPage > 1) currentPage--;
+        renderTable();
+    });
+
+    nextPage.addEventListener('click', () => {
+        currentPage++;
+        renderTable();
+    });
+
+    document.querySelectorAll("th[data-sort]").forEach(header => {
+        header.addEventListener("click", () => {
+            const key = header.getAttribute("data-sort");
+            sortAsc = sortKey === key ? !sortAsc : true;
+            sortKey = key;
+            renderTable();
+        });
+    });
+
+    function optimizeImageUrl(url, height = 100, format = 'webp') {
+        // Split the URL at the last slash to separate the base URL from the image identifier
+        const baseUrl = url.substring(0, url.lastIndexOf('/'));
+        const imageId = url.substring(url.lastIndexOf('/') + 1);
+        
+        // Construct the optimized URL
+        const optimizedUrl = `${baseUrl}/transform/height=${height},format=${format}/${imageId}`;
+        
+        return optimizedUrl;
+    }
+
+    function shuffle(array) {
+        let currentIndex = array.length;  
+
+        // While there remain elements to shuffle...
+        while (currentIndex !== 0) {
+            // Pick a remaining element...
+            let randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--; 
+            
+            // Swap it with the current element.
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        } 
+
+        return array;
+    }
+
+    // Init
+    fetchData();
+</script>

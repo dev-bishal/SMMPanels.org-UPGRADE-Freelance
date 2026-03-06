@@ -1,0 +1,31 @@
+---
+interface Props {
+    textLabelText :string
+    textBoxId :string
+    placeholder : string,
+    isRequired : boolean,
+    textValue? :string
+    inputType? :any
+    isLowerCaseText? :boolean
+    isDisabled ?: boolean
+    showSuggestion ?: boolean
+}
+const {textLabelText, textBoxId, placeholder, isRequired, textValue, inputType="text",isLowerCaseText = false, isDisabled=false, showSuggestion=true } = Astro.props;
+
+---
+
+<span class="flex flex-col items-center gap-2 w-full">
+    <label class="w-full text-left" for="">{textLabelText} {isRequired && "*"}</label>
+    <input onkeyup=
+    {
+        isLowerCaseText ? "return forceLower(this);" : ""
+    }
+    type={inputType} id={textBoxId} name={textBoxId} 
+    class="w-full p-2 px-3 rounded-md border border-[#f4f4f4] bg-white text-[#555555] shadow-lg disabled:bg-gray-300"
+    placeholder={placeholder}
+    required = {isRequired}
+    value={textValue}
+    disabled = {isDisabled}
+    autocomplete={!showSuggestion ? "off" : "" }
+    >
+</span>

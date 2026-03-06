@@ -1,0 +1,54 @@
+---
+import { metaData } from '../pages/data';
+import { metaDataEs } from '../pages/es/data';
+import { metaDataFr } from '../pages/fr/data';
+import { metaDataPt } from '../pages/pt/data';
+import { metaDataRu } from '../pages/ru/data';
+import { metaDataZh } from '../pages/zh/data';
+import { metaDataHi } from '../pages/hi/data';
+import { metaDataBn } from "../pages/bn/data";
+import { metaDataUr } from "../pages/ur/data";
+import { metaDataId } from "../pages/id/data";
+
+interface Props {
+    searchPagePath: string,
+    isDark ?: boolean
+    lang ?: string;
+}
+
+const {searchPagePath, isDark=false, lang="en"} = Astro.props;
+
+let contentPath;
+if(lang == "en") contentPath = metaData;
+else if(lang == "ru") contentPath = metaDataRu;
+else if(lang == "zh") contentPath = metaDataZh
+else if(lang == "es") contentPath = metaDataEs
+else if(lang == "fr") contentPath = metaDataFr
+else if(lang == "pt") contentPath = metaDataPt
+else if(lang == "hi") contentPath = metaDataHi
+else if(lang == "bn") contentPath = metaDataBn
+else if(lang == "ur") contentPath = metaDataUr
+else if(lang == "id") contentPath = metaDataId
+---
+
+<div class="searchBox w-full my-5">
+    <form onsubmit="return validateSearchForm()"
+        action={searchPagePath}
+        name="searchPanel"
+        class="relative flex gap-3 items-center"
+    >
+        <input
+            required
+            type="text"
+            name="q"
+            id="searchQuery"
+            class="w-full p-3 pl-6 hover:p-4 transition-all ease-in-out duration-200 outline-none text-white rounded-full backdrop-blur-sm shadow-xl placeholder:text-gray-300"
+            placeholder={contentPath?.text[45]} class:list={[
+                isDark ? "bg-[#50535698]" : "bg-[#cbd5e198]"
+            ]}
+        />
+        <button type="submit" class="absolute right-2 hover:bg-[#69b63d] bg-[#9bdd75] rounded-full size-10">
+            <i class="fa-solid fa-magnifying-glass dark:text-white"></i>
+        </button>
+    </form>
+</div>

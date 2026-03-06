@@ -1,0 +1,216 @@
+---
+import Button from "../../components/Button.astro";
+import SearchForm from "../../components/SearchForm.astro";
+import { getAPIPath, getImageBasePath } from "../../data/utils";
+import MainLayout from "../../layouts/MainLayout.astro";
+
+const allSiteFetch:any = await fetch(getAPIPath() + "siteSettings/" + import.meta.env.SITESETTINGSKEY).then(Response => Response.json());
+// Get search query from URL
+const q = Astro.url.searchParams.get("q") || "";
+const lang = Astro.url.searchParams.get("lang") || "en";
+const langDirectory = lang === "en" ? "" : `/${lang}`;
+
+// Fetch all data
+let allPanels = [];
+let allServices = [];
+let panels = [];
+let services = [];
+
+try {
+    // Fetch all panels
+    const panelsResponse = await fetch(`${getAPIPath()}panels`); // Your API that returns all panels
+    if (panelsResponse.ok) {
+        allPanels = await panelsResponse.json();
+    }
+
+    // Fetch all services
+    const servicesResponse = await fetch(`${getAPIPath()}services`); // Your API that returns all services
+    if (servicesResponse.ok) {
+        allServices = await servicesResponse.json();
+    }
+} catch (error) {
+    console.error("Data fetch error:", error);
+}
+
+// Perform search if query exists
+if (q.trim()) {
+    const searchTerm = q.toLowerCase().trim();
+    
+    // Filter panels
+    panels = allPanels.filter((panel :any) => {
+        const panelTitle = (panel.panelTitle || "").toLowerCase();
+        const panelSlug = (panel.panelSlug || "").toLowerCase();
+        const panelWebsite = (panel.panelWebsiteURL || "").toLowerCase();
+        
+        return panelTitle.includes(searchTerm) || 
+               panelSlug.includes(searchTerm) || 
+               panelWebsite.includes(searchTerm);
+    });
+
+    // Filter services
+    services = allServices.filter((service :any) => {
+        const serviceTitle = (service.serviceTitle || "").toLowerCase();
+        const serviceId = (service._id || "").toLowerCase();
+        
+        return serviceTitle.includes(searchTerm) || serviceId.includes(searchTerm);
+    });
+}
+
+// Helper function to format numbers
+const formatNumberShort = (num :any) => {
+    if (!num) return "0";
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+    if (num >= 1000) return (num / 1000).toFixed(1) + "K";
+    return num.toString();
+};
+
+// Mock content path (replace with your actual implementation)
+const contentPath = {
+    text: ["", "", "", "Services", "", "", "View Details", "", "", "", "", "", "Rating", "", "reviews"]
+};
+
+// Generate random rating for demo (replace with actual data)
+const getRandomRating = () => (Math.random() * 2 + 3).toFixed(1); // Random rating between 3.0 and 5.0
+
+// Generate random service count for demo (replace with actual data)
+const getRandomServiceCount = () => Math.floor(Math.random() * 500) + 50;
+---
+
+<MainLayout 
+    siteTitle = {allSiteFetch.SiteTitle} pageType="page" lang="pt" title={` Search on ${allSiteFetch.SiteTitle}`} metaDescription=`Search among Best SMM Panels, and SMM Services Search on ${allSiteFetch.SiteTitle}`>
+
+    <div data-apiurl={getAPIPath()} class="content-wrapper text-white flex flex-wrap lg:justify-start justify-center gap-5 my-6 px-5 lg:mt-24 mt-20">
+        
+        <article class="flex flex-col gap-5 w-full">
+            <h1 class="searchResTitle text-2xl font-semibold"></h1>
+		    <div class="searchBox flex justify-center items-center">
+                <div class="wrapper lg:w-1/2 w-full">
+                    <SearchForm lang="pt" searchPagePath={"/pt/search"}/>
+                </div>
+            </div>
+
+            <main class="container mx-auto px-4 py-8">
+                <!-- Search Header -->
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold mb-2">Search Results</h1>
+                    {q ? (
+                        <p class="text-gray-600 dark:text-gray-400">
+                            Found {panels.length + services.length} results for "{q}"
+                        </p>
+                    ) : (
+                        <p class="text-gray-600 dark:text-gray-400">Enter a search term to find panels and services</p>
+                    )}
+                </div>
+
+                {q && (
+                    <div class="space-y-12">
+                        <!-- Panels Section -->
+                        {panels.length > 0 && (
+                            <section>
+                                <h2 class="text-2xl font-semibold mb-4">Panels ({panels.length})</h2>
+                                <div class="flex flex-wrap gap-4 justify-start">
+                                    {panels.map((panel:any) => {
+                                        const panelUrl = panel.panelSlug || panel._id;
+                                        const panelTitle = panel.panelTitle || "Untitled Panel";
+                                        const imgSrc = `${getImageBasePath()}${panel.panelFeaturedImage}`; // Adjust as needed
+                                        const rating = 4.5; // You might want to get this from your data
+
+                                        return (
+                                            <article class="rounded-lg bg-[#d3d3d3] dark:bg-[#202123] lg:w-[31%] md:w-[45%] w-full">
+                                                <img 
+                                                    src={imgSrc} 
+                                                    alt={panelTitle} 
+                                                    class="panelThumbnail hover:brightness-90 cursor-pointer w-full h-[200px] object-cover rounded-t-lg"
+                                                />
+                                                <div class="panel-data p-3">
+                                                    <div class="head w-full flex flex-col justify-center items-center gap-1">
+                                                        <a class="font-semibold dark:hover:text-[#9bdd75] hover:text-black" href={`${langDirectory}/panels/${panelUrl}`}>
+                                                            <h2>{panelTitle}</h2>
+                                                        </a>
+                                                    </div>
+                                                    <div class="footer w-full flex justify-between items-center text-xs">
+                                                        <Button 
+                                                            url={`${langDirectory}/panels/${panelUrl}`} 
+                                                            text={contentPath?.text[6] || "View Details"} 
+                                                            iconClass="fa-solid fa-arrow-right"
+                                                        />
+                                                        <p>
+                                                            <span class="text-gray-600 dark:text-gray-400">
+                                                                <i class="fa-duotone fa-solid fa-stars"></i> {contentPath?.text[12] || "Rating"}: 
+                                                            </span>
+                                                            <span class="text-black dark:text-white">{rating} {contentPath?.text[14] || "reviews"}</span>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </article>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+                        )}
+
+                        <!-- Services Section -->
+                        {services.length > 0 && (
+                            <section>
+                                <h2 class="text-2xl font-semibold mb-4">Services ({services.length})</h2>
+                                <div class="flex flex-wrap gap-4 justify-start">
+                                    {services.map((service:any) => {
+                                        const serviceTitle = service.serviceTitle || "Untitled Service";
+                                        const serviceLogoUrl = service.serviceLogo || "";
+                                        const servicesCount = 150; // You might want to get this from your data
+
+                                        return (
+                                            <div class="service-card flex items-center gap-2 lg:w-[23%] w-[45%] rounded-md p-2 bg-[#c7c7c7d6] dark:bg-[#45454596]">
+                                                <img 
+                                                    src={getImageBasePath() + serviceLogoUrl} 
+                                                    alt={`${serviceTitle} logo`} 
+                                                    title={serviceTitle} 
+                                                    class="rounded-xl size-20"
+                                                />
+                                                <div class="details h-full flex flex-col justify-between">
+                                                    <a 
+                                                        class="text-lg font-semibold" 
+                                                        href={`${langDirectory}/services/${serviceTitle.toLowerCase().replaceAll(" ", "-")}`}
+                                                    >
+                                                        {serviceTitle}
+                                                    </a>
+
+                                                    {formatNumberShort(servicesCount) != "0" && (
+                                                        <span class="text-sm font-semibold" title={servicesCount.toString()}>
+                                                            {formatNumberShort(servicesCount)} {
+                                                                lang == "en" 
+                                                                ? "Services"
+                                                                : contentPath?.text[3] || "Services"
+                                                            }
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+                        )}
+
+                        <!-- No Results Message -->
+                        {panels.length === 0 && services.length === 0 && (
+                            <div class="text-center py-12">
+                                <p class="text-xl text-gray-600 dark:text-gray-400">
+                                    No results found for "{q}"
+                                </p>
+                                <p class="mt-2 text-gray-500 dark:text-gray-500">
+                                    Try checking your spelling or using different keywords
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </main>
+        </article>
+        
+    </div>
+
+    <span class="hidden rounded-tl-lg rounded-tr-lg bg-[#81818169]"></span>
+</MainLayout>
+
+<script is:inline src="/assets/scripts/main.js"></script>

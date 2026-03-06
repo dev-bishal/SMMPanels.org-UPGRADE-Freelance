@@ -1,0 +1,532 @@
+---
+import { isSame, getAPIPath, JsonToHtml, getRandomElements, optimizeImageUrl, shuffleArray, mainData, AIPrompt, getImageBasePath } from "../../../data/utils";
+import MainLayout from "../../../layouts/MainLayout.astro";
+import sitejabberLogo from "../../../assets/Sitejabber_logo.png"
+import reviewsLogo from "../../../assets/reviewsLogo.webp"
+import trustpilotlogo from "../../../assets/trustpilotlogo.webp"
+
+import { makeWordsClickable, getLanguage } from "../../../data/utils";
+import { metaDataRu } from "../data";
+let contentPath = metaDataRu;
+
+interface panelSchema {
+    id: string;
+    panelFeaturedImage: string;
+    panelAPIKey: string;
+    panelAPILink: string;
+    panelTitle: string;
+    panelWebsiteURL: string;
+    panelSlug: string;
+    panelTextDescription: string;
+    panelMetaDesc: string;
+    panelTotalServices: number;
+    rating: number;
+    ratingOtherSites: [{
+        score : string,
+        ratingURL :string,
+        ratingSite :string,
+        TotalReviews : string
+    }];
+    paymentOptions: [{
+        payDepo: string;
+        payOption: string;
+    }],
+    dataType : string
+}
+
+var APIError = "";
+
+const allServicesFetch = await fetch(getAPIPath() + "services");
+const allServices = await allServicesFetch.json();
+
+let allPanelsData2: panelSchema[] = await fetch(getAPIPath() + "panels").then(Response => Response.json());
+allPanelsData2 = shuffleArray(allPanelsData2);
+
+//#region fetching Panels and getting the current panel as Static Path
+export const prerender = true;
+export async function getStaticPaths() {
+    const allPanelsFetch: any = await fetch(getAPIPath() + "panels");
+    const allPanelRes: panelSchema[] = await allPanelsFetch.json();
+
+    return allPanelRes.map((panel: any) => ({
+        params: { slug: panel.panelSlug },
+        props: { panel },
+    }));
+}
+const { panel } = Astro.props;
+const { slug } = Astro.params;
+//#endregion
+
+//#region Fetching the current panel Services list and calculating the Average Price from its API
+var servicesResponse : any;
+var averagePrice: number = 0,totalPrice : number = 0;
+try {
+    servicesResponse = await fetch(
+        `${panel.panelAPILink}?key=${panel.panelAPIKey}&action=services`
+    ).then(Response => Response.json());
+
+    try {
+        if(servicesResponse.error.toLowerCase().includes("invalid")){
+            APIError = servicesResponse.error;
+            servicesResponse = [];
+        }
+    } catch (error) {}
+    
+} catch (error) { 
+    console.log(panel.panelTitle, `${panel.panelAPILink}?key=${panel.panelAPIKey}&action=services` + "- Could not Find Services with GET Method");
+    servicesResponse = [];
+}
+
+for (let j = 0; j < servicesResponse.length; j++) {
+    if((Number(servicesResponse[j].rate) < 850) && (Number(servicesResponse[j].rate) > 0.0001))
+        totalPrice += Number(servicesResponse[j].rate);
+}
+if(servicesResponse.length != 0)
+    averagePrice= Number((totalPrice/servicesResponse.length).toFixed(2));
+//#endregion
+
+//#region Finding the Related Services from the current panel
+var randomPlatformList: any = [];
+let allServiceNames: string[] = [];
+var platformList: any = [];
+
+if(servicesResponse.length != undefined){
+    if(servicesResponse.length != 0) {
+        
+        // Collecting Services names which are available in the Panels API Services
+        servicesResponse.map((service: any) =>
+            allServiceNames.push(service.name.toLowerCase()),
+        );
+        
+        for (let i = 0; i < allServices.length; i++) {
+            for (let j = 0; j < allServiceNames.length; j++) {
+                if (isSame(allServiceNames[j], allServices[i].serviceTitle)) {
+                    if (platformList.includes(allServices[i]) == false)
+                        platformList.push(allServices[i]);
+                }
+            }
+        }
+        randomPlatformList = getRandomElements(platformList, platformList.length)
+    }
+    else
+        servicesResponse = [];    
+}
+else
+    servicesResponse = [];    
+//#endregion 
+
+//#region Forming Rating Collection for the current panel
+var ratingCollection: String[] = [];
+for (let j = 0; j < 5; j++) {
+    if (j < panel.rating) ratingCollection.push("fa-sharp fa-solid fa-star-sharp");
+    else ratingCollection.push("fa-sharp fa-regular fa-star-sharp");
+}
+//#endregion
+
+const allPaymentOptions: any = await fetch(getAPIPath() + "payments").then(Response => Response.json());
+function getPaymentOptImgLink(paymentOpTitle:string) {
+    for (let i = 0; i < allPaymentOptions.length; i++) {
+        if(allPaymentOptions[i].paymentOptTitle.toLowerCase() === paymentOpTitle.toLowerCase())
+        return allPaymentOptions[i];
+    }
+}
+
+var platformListTitles: any = [];
+allServices.map((services:any)=>(
+    platformListTitles.push(services.serviceTitle.toLowerCase())
+));
+
+// let data = await AIPrompt(command2, makeWordsClickable(JsonToHtml(panel.panelTextDescription), platformListTitles, `/${metaDataRu.language}/services/`) )
+
+
+
+const allSiteFetch:any = await fetch(getAPIPath() + "siteSettings/" + import.meta.env.SITESETTINGSKEY).then(Response => Response.json());
+---
+
+<MainLayout 
+    siteTitle = {allSiteFetch.SiteTitle} 
+    lang={metaDataRu.language}
+    title={panel.panelTitle + " | Отзывы и услуги"} 
+    metaDescription={panel.panelMetaDescriptionRU} 
+    pageFeaturedImage={getImageBasePath() + panel.panelFeaturedImage}
+    pageType="article">
+    
+    <article class="my-5 text-[#202123] dark:text-white" >
+        
+        <div class="head-section relative">
+            <div class="cover relative size-full min-h-[650px] lg:min-h-[auto] z-0">
+                <img src={getImageBasePath() + panel.panelFeaturedImage} class="w-full md:h-[830px] lg:h-[400px] h-full rounded-lg" alt={panel.panelTitle} />
+                <div class="overlay absolute backdrop-blur-md top-0 left-0 w-full h-full bg-radial-light dark:bg-radial bg-opacity-80"></div>
+            </div>
+
+            <div class="heading-section lg:p-6 p-3 z-[1] absolute top-0 text-white size-full flex flex-col lg:flex-row gap-8">
+                <span class="w-full lg:w-1/2 flex justify-center flex-col gap-6">
+                    <h1 class="text-4xl font-bold">{panel.panelTitle}</h1>
+            
+                    <span class="flex gap-3 justify-center items-center">
+                        <a target="_blank" class="block text-xs md:text-base rounded-full p-3 hover:bg-[#69b63d] bg-[#9bdd75] text-black" href={panel.panelWebsiteURL}><i class="fa-regular fa-arrow-up-right-from-square"></i> {metaDataRu.text[20]} {panel.panelTitle}</a>
+                        <a target="_blank" class="block text-xs md:text-base rounded-full p-3 hover:bg-[#69b63d] bg-[#9bdd75] text-black" href=`/${metaDataRu.language}/panels/`><i class="fa-sharp-duotone transform -scale-x-100 fa-light fa-share"></i> {metaDataRu.text[19]}</a>
+                    </span>
+                    <span class="flex justify-center flex-wrap w-full gap-2">
+                        <section class="relative flex justify-center gap-2 items-center bg-cover bg-center bg-no-repeat py-2 w-[45%]">
+                            <div class="brightnessLow-overlay absolute z-0 rounded-lg w-full h-full bg-[#444444d6] border border-[#9bdd75]"></div>
+                            <span class="relative flex items-center justify-center">
+                                <i class="text-3xl text-[#9bdd75] fa-regular fa-star-christmas"></i>
+                                <span class="absolute size-4 rounded-full shadow-lg shadow-[#9bdd75]"></span>
+                            </span>
+                            <h2 class="z-[1] text-center">
+                                <span class="text-3xl font-semibold block"> {servicesResponse.length} </span>
+                                <span class="text-xs">{metaDataRu.text[21]}</span>
+                            </h2>
+                        </section>
+                        <section class="relative flex justify-center gap-2 items-center bg-cover bg-center bg-no-repeat py-2 w-[45%]">
+                            <div class="brightnessLow-overlay absolute z-0 rounded-lg w-full h-full bg-[#444444d6] border border-[#9bdd75]"></div>
+                            <span class="relative flex items-center justify-center">
+                                <i class="text-3xl text-[#9bdd75] fa-solid fa-badge-dollar"></i>
+                                <span class="absolute size-4 rounded-full shadow-lg shadow-[#9bdd75]"></span>
+                            </span>
+                            <h2 class="z-[1] text-center"> <span class="text-3xl font-semibold block">
+                                    ${averagePrice} </span>
+                                <span class="text-xs">{metaDataRu.text[22]}</span>
+                            </h2>
+                        </section>
+                        <section class="relative flex justify-center gap-2 items-center bg-cover bg-center bg-no-repeat py-2 w-[45%]">
+                            <div class="brightnessLow-overlay absolute z-0 rounded-lg w-full h-full bg-[#444444d6] border border-[#9bdd75]"></div>
+                            <span class="relative flex items-center justify-center">
+                                <i class="text-3xl text-[#9bdd75] fa-duotone fa-solid fa-stars"></i>
+                                <span class="absolute size-4 rounded-full shadow-lg shadow-[#9bdd75]"></span>
+                            </span>
+                            <h2 class="z-[1] text-center"> <span class="text-3xl font-semibold block">
+                                    {panel.rating} </span>
+                                <span class="text-xs">{metaDataRu.text[12]}</span>
+                            </h2>
+                        </section>
+                        <section class="relative flex justify-center gap-2 items-center bg-cover bg-center bg-no-repeat py-2 w-[45%]">
+                            <div class="brightnessLow-overlay absolute z-0 rounded-lg w-full h-full bg-[#444444d6] border border-[#9bdd75]"></div>
+                            <span class="relative flex items-center justify-center">
+                                <i class="text-3xl text-[#9bdd75] fa-duotone fa-solid fa-credit-card"></i>
+                                <span class="absolute size-4 rounded-full shadow-lg shadow-[#9bdd75]"></span>
+                            </span>
+                            <h2 class="z-[1] text-center"> <span class="text-3xl font-semibold block">
+                                    {panel.paymentOptions.length} </span>
+                                <span class="text-xs">{metaDataRu.text[7]}</span>
+                            </h2>
+                        </section>
+                    </span>
+                </span>
+
+                <span class="w-full relative lg:w-1/2 mt-10 flex justify-center items-center flex-col gap-2">
+                    <img src={getImageBasePath() + panel.panelFeaturedImage} alt={panel.panelTitle +" Panel Image"} class="shadow-lg rounded-lg w-[110%] lg:w-full lg:h-[280px] z-[1]" height="280px" width="100%">
+                    <span class="bg-design bg-[#66a044] rounded-2xl lg:h-[290px] h-[220px] lg:w-[105%] w-[90%] lg:-translate-y-6 absolute z-0"></span>
+                </span>
+            </div>
+
+        </div>
+
+        <section class="services p-6 bg-[#d3d3d3] dark:bg-[#202123] rounded-lg my-5">
+            <span class="flex justify-between items-center w-full mb-5">
+                <h2 class="text-2xl font-semibold"><i class="fa-duotone fa-solid fa-rocket"></i> {metaDataRu.text[24]}</h2>
+                <span id="serviceSeeAllBtn" class="text-[#9bdd75] text-sm cursor-pointer w-[30%] md:w-fit">{metaDataRu.text[8]} <i class="fa-light fa-angle-down transition-all ease-in-out"></i></span>
+            </span>
+            
+            <div class="matching-services flex gap-2 flex-wrap justify-center items-center flex-1 mb-3">
+                {
+                    randomPlatformList.map((platform:any, index: number)=>(
+                    <div class="service-card flex justify-center items-center gap-2 lg:w-[19%] w-[45%] rounded-md p-2 bg-[#45454549] hover:bg-[#45454596]"
+                        class:list={[
+                            index >=5 && "hidden toggle"
+                        ]}
+                    >
+                        <img src={getImageBasePath() + platform.serviceLogo} alt={`${platform.serviceTitle} logo`} title={platform.serviceTitle} class="rounded-full size-10" />
+                        <span class="text-lg font-semibold">{platform.serviceTitle}</span>
+                    </div>
+                    ))
+                }
+            </div>
+
+        </section>
+
+        <div class="content-box my-4">
+            <p>{panel.panelMetaDescriptionRU}</p>
+        </div>
+
+        <div class="split w-full gap-4 flex flex-col lg:flex-row">
+            <section class="rounded-lg shadow-md bg-[#d3d3d3] dark:bg-[#202123] lg:w-1/2 w-full flex justify-center items-center bg-cover bg-center bg-no-repeat mb-4">
+                <div class="paymentOptions z-[1] w-full p-3 rounded-md ">
+                    <h2 class="text-3xl font-semibold">{metaDataRu.text[7]}</h2>
+                    <div class="table w-full mt-4">
+                        <div class="header flex w-full p-2 gap-x-2 font-semibold bg-[#44444469] rounded-sm">
+                            <div class="col w-[40%]">{metaDataRu.text[51]}</div>
+                            <div class="col w-[25%]">{metaDataRu.text[52]}</div>
+                            <div class="col w-[25%]">{metaDataRu.text[53]}</div>
+                        </div>
+                        {
+                            panel.paymentOptions.map((paymentOp: any) => (
+                                <div class="row flex w-full p-2 gap-x-2">
+                                    <div class="col w-[40%] flex gap-2">
+                                        {
+                                            (getPaymentOptImgLink(paymentOp.payOption) != undefined || getPaymentOptImgLink(paymentOp.payOption) != null) &&
+                                            <a href={`/${metaDataRu.language}/payment-options/`+paymentOp.payOption.toLowerCase().replaceAll(" ", "-").replaceAll("/", "-")}>
+                                                <img height="30px" src={getImageBasePath() + getPaymentOptImgLink(paymentOp.payOption).paymentLogo} class="h-[30px] object-contain hover:scale-105 max-w-[50px]" alt={paymentOp.payOption} />
+                                            </a>
+                                        }
+                                        {paymentOp.payOption}
+                                    </div>
+                                    <div class="col w-[25%]">
+                                        {paymentOp.payDepo}
+                                    </div>
+                                    <div class="col w-[25%]">
+                                        {paymentOp.payBonus || "-"}
+                                    </div>
+                                </div>
+                            ))
+                        }
+                    </div>
+                </div>
+            </section>
+        
+            <section class="rounded-lg bg-[#d3d3d3] dark:bg-[#202123] lg:w-1/2 w-full h-auto flex justify-center items-start bg-cover bg-center bg-no-repeat mb-4">
+                <div class="ratings z-[1] w-full p-3 rounded-md shadow-md h-full">
+                    <h2 class="text-3xl font-semibold">{metaDataRu.text[13]}</h2>
+
+                    <div class="rating flex gap-5 w-full flex-col justify-center items-stretch h-full">
+                        <span class="main-ratings flex items-center flex-col gap-2">
+                            <span class="text-5xl font-semibold">{panel.rating}</span>
+                            <span class="flex gap-2 text-[#9bdd75] text-2xl">
+                                {
+                                    ratingCollection.map((rating) => (
+                                        <i class={rating.toString()} />
+                                    ))
+                                }
+                            </span>
+                        </span>
+
+                        {
+                            (panel.ratingOtherSites != null )  &&
+                            panel.ratingOtherSites.map((rating:any)=>(
+                                rating.ratingURL != "" &&
+                                (
+                                    <a target="_blank"href={rating.ratingURL} class="reviewsBox text-[#0056b3] text-center w-full mb-4 flex flex-col items-center bg-[#c3d6b8] p-2 rounded-md shadow-md">
+                                        <img src={
+                                            (rating.ratingSite == "TrustPilot" ? trustpilotlogo.src
+                                            :
+                                            rating.ratingSite == "Sitejabber" ? sitejabberLogo.src
+                                            :
+                                            reviewsLogo.src)
+                                        } alt={rating.ratingSite + " logo"} class="h-10 lg:w-[180px] w-full object-contain" />
+                                        <span class="flex gap-2 font-bold text-2xl">
+                                            {
+                                                `${rating.score} / 5` 
+                                            }
+                                        </span>
+                                        <span class="block">{ `(${rating.TotalReviews} Reviews)` }</span>
+                                    </a>
+                                )
+                            ))
+                        }
+
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="content p-6 bg-[#d3d3d3] dark:bg-[#202123] rounded-lg my-5" set:html={makeWordsClickable(panel.panelTextDescriptionRU || "", platformListTitles)}></div>
+
+        <div class="services-list my-4">
+            {
+                servicesResponse.length != 0 && (
+                    <h2 class="text-3xl font-semibold">
+                        {metaDataRu.text[25]} {panel.panelTitle}
+                    </h2>
+                    <div class="services-table-holder shadow-2xl mb-4 mt-5 lg:w-full w-[89vw] overflow-auto">
+                        <div class="table-wrapper md:w-full w-[700px] bg-[#d3d3d3] dark:bg-transparent ">
+                            <span class="offerHeader w-full flex bg-[#629645] font-semibold text-white ">
+                                <span class="offer_id my-6 w-[5%] pl-2">
+                                    {metaDataRu.text[46]}
+                                </span>
+                                <span class="offer_service my-6 w-[41%]">
+                                    {metaDataRu.text[47]}
+                                </span>
+                                <span class="offer_Minorder my-6 w-[18%]">
+                                    {metaDataRu.text[48]}
+                                </span>
+                                <span class="offer_Maxorder my-6 w-[18%]">
+                                    {metaDataRu.text[49]}
+                                </span>
+                                <span class="offer_rate my-6 w-[18%]">
+                                    {metaDataRu.text[50]}
+                                </span>
+                            </span>
+                            {
+                                
+                            servicesResponse.slice(0, 10)
+                                .map((service: any, j: number) => (
+                                    <span class="offerList w-full flex border-b border-gray-400">
+                                        <span class="offer_id line-clamp-1 my-3 w-[5%] pl-2">
+                                            {j + 1}
+                                        </span>
+                                        <span
+                                            class="offer_service line-clamp-1 my-3 w-[41%] text-left"
+                                            title={service.name}
+                                        >
+                                            {service.name}
+                                        </span>
+                                        <span class="offer_Minorder line-clamp-1 my-3 w-[18%]">
+                                            {service.min}
+                                        </span>
+                                        <span class="offer_Maxorder line-clamp-1 my-3 w-[18%]">
+                                            {service.max}
+                                        </span>
+                                        <span class="offer_rate line-clamp-1 my-3 w-[18%]">
+                                            ${service.rate}
+                                        </span>
+                                    </span>
+                                ))}
+                        </div>
+                    </div>
+                )
+            }
+        </div>
+
+    </article>
+
+        <section class="others-related-panels text-white hidden">
+        {
+            allPanelsData2.length > 0 &&
+            <h2 class="text-3xl my-5 font-semibold ">{metaDataRu.text[26]}</h2>
+            <div id="otherPanelsHolder" class="otherPanels flex justify-center items-center gap-5 lg:flex-row flex-col">
+                {/* Panels links will be added on client side */}
+            </div>
+        }
+    </section>
+</MainLayout>
+
+<script is:inline>
+    let serviceSeeAllBtn = document.querySelector("#serviceSeeAllBtn");
+    if(serviceSeeAllBtn){
+        serviceSeeAllBtn.addEventListener("click", ()=>{
+            serviceSeeAllBtn.querySelector("i").classList.toggle("rotate-180");
+    
+            document.querySelectorAll(".service-card.toggle").forEach(serviceCard =>{
+                serviceCard.classList.toggle("hidden");
+            })
+        })
+    }
+</script>
+
+<style is:inline>
+    article h1{
+        font-size: 22px;
+        font-weight: 600;
+        padding-bottom: 15px;
+        padding-top: 10px;
+    }
+    article .content h1{
+        font-size: 22px;
+        font-weight: 600;
+        padding-bottom: 15px;
+        padding-top: 10px;
+    }
+    article .content h2{
+        font-size: 20px;
+        font-weight: 500;
+        padding-bottom: 15px;
+        padding-top: 10px;
+    }
+    article .content h3{
+        font-size: 19px;
+        font-weight: 500;
+        padding-bottom: 15px;
+        padding-top: 10px;
+    }
+    article .content h4{
+        font-size: 17px;
+        font-weight: 500;
+        padding-bottom: 15px;
+        padding-top: 10px;
+    }
+    article .content h5{
+        font-size: 16px;
+        font-weight: 500;
+        padding-bottom: 15px;
+        padding-top: 10px;
+    }
+    article .content h6{
+        font-size: 15px;
+        font-weight: 500;
+        padding-bottom: 15px;
+        padding-top: 10px;
+    }
+    article .content ol{
+        list-style-type: decimal;
+        padding-left: 2rem;
+    }
+    article .content p{
+        padding-bottom: 15px;
+    }
+
+    .dark article .content a{
+        color: #9bdd75
+    }
+
+    article .content a{
+        color: #1c9465
+    }
+
+    article .content a:hover{
+        text-decoration-line: underline;
+    }
+</style>
+
+<script is:inline define:vars={{currentPanel : slug, imagePath : getImageBasePath(), allPanelsFetch : allPanelsData2, text12 : contentPath?.text[12], text14 : contentPath?.text[14], imagePath : getImageBasePath() }}>
+
+    let langDirectory = window.localStorage.getItem("lang") != "en" ? "/" + window.localStorage.getItem("lang") : "";
+    let otherPanelsMain = document.querySelector(".others-related-panels");
+    let otherPanelsHolder = document.getElementById("otherPanelsHolder");
+    function shuffle(array) {
+        let currentIndex = array.length;  
+
+        // While there remain elements to shuffle...
+        while (currentIndex !== 0) {
+            // Pick a remaining element...
+            let randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--; 
+            
+            // Swap it with the current element.
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        } 
+
+        return array;
+    }
+
+    (function() {
+        let filteredPanels = allPanelsFetch.filter(obj => obj.panelSlug !== currentPanel);
+        filteredPanels = shuffle(filteredPanels);
+
+        if(filteredPanels.length > 0){
+            otherPanelsMain.classList.toggle("hidden");
+            otherPanelsHolder.innerHTML = "";
+            
+            filteredPanels.slice(0,3).map((panels) =>(
+                otherPanelsHolder.insertAdjacentHTML("afterbegin", 
+                    `<a href="${langDirectory}/panels/${panels.panelSlug}" class="other-panel card group rounded-xl relative lg:w-[32%] overflow-hidden">
+                        <img src="${imagePath + panels.panelFeaturedImage}" alt={panelTitle} class="size-full lg:h-[230px] rounded-xl">
+                        <div class="overlay transition-all ease duration-300 absolute z-0 top-0 group-hover:backdrop-blur-lg left-0 size-full rounded-xl group-hover:bg-[#0000004a] flex items-center justify-center"></div>
+                        <span class="text transition-all ease duration-300 absolute z-[1] bottom-4 w-full px-2 translate-y-8 group-hover:translate-y-0">
+                            <span class="text-xl font-semibold [text-shadow:_1px_2px_2px_rgb(0_0_0_/_70%)] text-[#9bdd75]">${panels.panelTitle}</span>
+                            <span class="flex w-full justify-between text-sm">
+                                <span>
+                                    <span><i class="fa-duotone fa-solid fa-stars"></i> ${text12}: </span>
+                                    <span>${panels.rating + " " + text14}</span>
+                                </span>
+                            </span>
+                        </span>
+                    </a>`
+                )
+                
+            ))
+        }
+        
+    })();
+
+</script>

@@ -1,0 +1,90 @@
+---
+import LogoAnimation from "../components/LogoAnimation.astro";
+import { metaData } from "../pages/data";
+import { metaDataEs } from '../pages/es/data';
+import { metaDataFr } from '../pages/fr/data';
+import { metaDataPt } from '../pages/pt/data';
+import { metaDataRu } from '../pages/ru/data';
+import { metaDataZh } from '../pages/zh/data';
+import { metaDataHi } from '../pages/hi/data';
+import { metaDataBn } from "../pages/bn/data";
+import { metaDataUr } from "../pages/ur/data";
+import { metaDataId } from "../pages/id/data";
+import { getAPIPath, getImageBasePath, } from "../data/utils";
+
+interface Props {
+    lang ?: string;
+}
+
+const {lang = "en"} = Astro.props;
+
+let langDirectory = "";
+if(lang != "en"){
+    langDirectory = "/"+ lang
+}
+
+let contentPath;
+if(lang == "en") contentPath = metaData;
+else if(lang == "ru") contentPath = metaDataRu;
+else if(lang == "zh") contentPath = metaDataZh
+else if(lang == "es") contentPath = metaDataEs
+else if(lang == "fr") contentPath = metaDataFr
+else if(lang == "pt") contentPath = metaDataPt
+else if(lang == "hi") contentPath = metaDataHi
+else if(lang == "bn") contentPath = metaDataBn
+else if(lang == "ur") contentPath = metaDataUr
+else if(lang == "id") contentPath = metaDataId;
+
+const allSiteFetch:any = await fetch(getAPIPath() + "siteSettings/" + import.meta.env.SITESETTINGSKEY).then(Response => Response.json());
+---
+<style is:inline>
+
+@keyframes floatAndRotate {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  10%, 30%, 50%, 70%, 90% { transform: translateY(-15px); }
+  20%, 40%, 60%, 80% { transform: translateY(0); }
+  100% { transform: translateY(0) rotate(1080deg); }
+}
+
+.floatAndRotateElement {
+  animation: floatAndRotate 5s ease-in-out infinite;
+}
+
+</style>
+<aside class="bg-[#d3d3d3] dark:bg-[#202123] z-10 fixed md:relative md:translate-x-0 transition-all ease-in-out duration-200 -translate-x-full lg:block lg:w-1/5 min-h-full py-7">
+
+    <div class="content sticky top-7">
+        <span class="w-full m-auto block p-4">
+            <LogoAnimation {lang} siteLogoImage = {getImageBasePath() + allSiteFetch.siteLog}/>
+        </span>
+        <ul class="listItems flex flex-col gap-3 pr-7 text-white py-4">
+            <li><a class="px-4 pl-6 py-2 flex items-center gap-3 rounded-r-full aria-current:text-[#9bdd75] aria-current:dark:bg-[#676767] aria-current:bg-[#2f3237] dark:bg-[#2f3237] bg-[#a0a0a0] hover:dark:bg-[#a0a0a0] hover:bg-[#797979]" href=`${langDirectory}/`><i class="fa-solid fa-house"></i><span>{contentPath?.text[0] ?? ''}</span></a></li>
+            <li><a class="px-4 pl-6 py-2 flex items-center gap-3 rounded-r-full aria-current:text-[#9bdd75] aria-current:dark:bg-[#676767] aria-current:bg-[#2f3237] dark:bg-[#2f3237] bg-[#a0a0a0] hover:dark:bg-[#a0a0a0] hover:bg-[#797979]" href=`${langDirectory}/panels`><i class="fa-duotone fa-solid fa-gift-card"></i><span>{contentPath?.text[1] ?? ''}</span></a></li>
+            <li><a class="px-4 pl-6 py-2 flex items-center gap-3 rounded-r-full aria-current:text-[#9bdd75] aria-current:dark:bg-[#676767] aria-current:bg-[#2f3237] dark:bg-[#2f3237] bg-[#a0a0a0] hover:dark:bg-[#a0a0a0] hover:bg-[#797979]" href=`${langDirectory}/payment-options`><i class="fa-regular fa-money-bill-wave"></i><span>{contentPath?.text[2] ?? ''}</span></a></li>
+            <li><a class="px-4 pl-6 py-2 flex items-center gap-3 rounded-r-full aria-current:text-[#9bdd75] aria-current:dark:bg-[#676767] aria-current:bg-[#2f3237] dark:bg-[#2f3237] bg-[#a0a0a0] hover:dark:bg-[#a0a0a0] hover:bg-[#797979]" href=`${langDirectory}/services`><i class="fa-solid fa-icons"></i><span>{contentPath?.text[3] ?? ''}</span></a></li>
+        </ul>
+        
+    </div>
+
+</aside>
+
+<script is:inline>
+//#region Nav Links Current Page detect
+const allNavLinks = document.querySelectorAll(".listItems li");
+
+allNavLinks.forEach((link) => {
+
+    if(window.location.href.split("/").length > link.querySelector('a').href.split("/").length){
+        let previousDirectory = window.location.href.split("/");
+        previousDirectory.splice(-1, 1);
+        previousDirectory = previousDirectory.join("/");
+        
+        if(previousDirectory === (link.querySelector('a').href))
+            link.querySelector('a').setAttribute("aria-current", "true");
+    }
+    else if(window.location.href === (link.querySelector('a').href)){
+        link.querySelector('a').setAttribute("aria-current", "true");
+    }
+});
+//#endregion
+</script>

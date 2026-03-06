@@ -1,0 +1,77 @@
+---
+import { SEO } from 'astro-seo';
+
+interface Props {
+    title : string;
+    metaDescription : string;
+    pageType : string;
+    pageFeaturedImage : string;
+}
+
+const {title, metaDescription, pageType = "website", pageFeaturedImage} = Astro.props;
+---
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+
+    <link rel="shortcut icon" href="/favicon.png" type="image/x-icon">
+
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/all.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/sharp-duotone-solid.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/sharp-regular.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/sharp-solid.css">
+
+    <!-- IMPLEMENT SEO TAGS HERE -->
+
+    <SEO
+      title={title}
+      description={metaDescription}
+      openGraph={{
+        basic: {
+          title: title,
+          type: pageType,
+          image: pageFeaturedImage,
+        }
+      }}
+      extend={{
+        // extending the default link tags
+        link: [{ rel: "icon", href: "/favicon.ico" }],
+        // extending the default meta tags
+        meta: [
+          {
+            name: "twitter:image",
+            content: pageFeaturedImage,
+          },
+          { name: "twitter:title", content: title },
+          { name: "twitter:description", content: metaDescription },
+        ],
+      }}
+    />
+
+    <script is:inline>
+      if(localStorage.getItem("theme") == null){
+          if(window.matchMedia('(prefers-color-scheme: dark)').matches){
+              localStorage.theme = 'dark'
+              document.querySelector("html").classList.add("dark");
+          }
+          else{
+              localStorage.theme = 'light'
+              document.querySelector("html").classList.remove("dark");
+          }           
+
+          if(localStorage.getItem("theme") == "dark"){
+              document.addEventListener("DOMContentLoaded", ()=>{
+                  document.getElementById('themeToggleCheckbox').checked = true;          
+              })
+          }
+
+      }
+      else{
+          if(localStorage.theme === "dark") document.querySelector("html").classList.add("dark");
+          else document.querySelector("html").classList.remove("dark");
+      }
+  </script>
+</head>

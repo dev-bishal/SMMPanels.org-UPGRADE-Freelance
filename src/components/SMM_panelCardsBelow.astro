@@ -1,0 +1,53 @@
+---
+import { metaData } from '../pages/data';
+import { metaDataEs } from '../pages/es/data';
+import { metaDataFr } from '../pages/fr/data';
+import { metaDataPt } from '../pages/pt/data';
+import { metaDataRu } from '../pages/ru/data';
+import { metaDataZh } from '../pages/zh/data';
+import { metaDataHi } from '../pages/hi/data';
+import { metaDataBn } from "../pages/bn/data";
+import { metaDataUr } from "../pages/ur/data";
+import { metaDataId } from "../pages/id/data";
+
+interface Props {
+    imageSrc : string,
+    panelTitle : string,
+    slugURL : string,
+    rating : number,
+    lang ?: string;
+}
+
+const {imageSrc ,panelTitle, slugURL, rating, lang = "en"} = Astro.props;
+
+let langDirectory = "";
+if(lang != "en"){
+    langDirectory = "/"+ lang
+}
+
+let contentPath;
+if(lang == "en") contentPath = metaData;
+else if(lang == "ru") contentPath = metaDataRu;
+else if(lang == "zh") contentPath = metaDataZh
+else if(lang == "es") contentPath = metaDataEs
+else if(lang == "fr") contentPath = metaDataFr
+else if(lang == "pt") contentPath = metaDataPt
+else if(lang == "hi") contentPath = metaDataHi
+else if(lang == "bn") contentPath = metaDataBn
+else if(lang == "ur") contentPath = metaDataUr
+else if(lang == "id") contentPath = metaDataId
+---
+
+<a href={`${langDirectory}/panels/` + slugURL} class="other-panel card group rounded-xl relative lg:w-[32%] overflow-hidden">
+    <img src={imageSrc} alt={panelTitle} class="size-full lg:h-[230px] rounded-xl">
+    <div class="overlay transition-all ease duration-300 absolute z-0 top-0 group-hover:backdrop-blur-lg left-0 size-full rounded-xl group-hover:bg-[#0000004a] flex items-center justify-center"></div>
+    <span class="text transition-all ease duration-300 absolute z-[1] bottom-4 w-full px-2 translate-y-8 group-hover:translate-y-0">
+        <span class="text-xl font-semibold [text-shadow:_1px_2px_2px_rgb(0_0_0_/_70%)] text-[#9bdd75]">{panelTitle}</span>
+        <span class="flex w-full justify-between text-sm">
+            <span>
+                <span><i class="fa-duotone fa-solid fa-stars"></i> {contentPath?.text[12]}: </span>
+                <span>{rating + " " + contentPath?.text[14]}</span>
+            </span>
+        </span>
+    </span>
+</a>

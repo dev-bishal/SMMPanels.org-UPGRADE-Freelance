@@ -1,0 +1,149 @@
+---
+// import logo from '../assets/Brilliant Waves.png';
+import { AIPrompt, getAPIPath, getImageBasePath } from '../data/utils';
+import { metaData } from '../pages/data';
+import { metaDataEs } from '../pages/es/data';
+import { metaDataFr } from '../pages/fr/data';
+import { metaDataPt } from '../pages/pt/data';
+import { metaDataRu } from '../pages/ru/data';
+import { metaDataZh } from '../pages/zh/data';
+import { metaDataHi } from '../pages/hi/data';
+import { metaDataBn } from "../pages/bn/data";
+import { metaDataUr } from "../pages/ur/data";
+import { metaDataId } from "../pages/id/data";
+import LogoAnimation from './LogoAnimation.astro';
+interface Props {
+    lang ?: string;
+    siteTitle ?: string;
+}
+
+const allSiteFetch:any = await fetch(getAPIPath() + "siteSettings/" + import.meta.env.SITESETTINGSKEY).then(Response => Response.json());
+
+// console.log(allSiteFetch.footerText);
+
+if(allSiteFetch.footerText.status == "Translate Again"){
+    // console.log("Footer Translation begins");
+    
+    //Translating Footer Text Here- 
+    let languages = [
+        "Russian",
+        "Chinese",
+        "Spanish",
+        "French",
+        "Portuguese",
+        "Hindi",
+        "Bengali",
+        "Urdu",
+        "Indonesian"
+    ]
+    let footerTranslated: any[][] = [];
+    footerTranslated.push(["English" , allSiteFetch.footerEN]);
+    
+    for (let i = 0; i < languages.length; i++) {
+        let command = `You are a Human friendly translator Assistant. Your Target language is ${languages[i]}.`;
+        let response = await AIPrompt(command, allSiteFetch.footerEN );
+        
+        // console.log(`Footer Translation for ${languages[i]}- `, response);
+        footerTranslated.push([languages[i] , response]);
+    }
+    //Making a Object of all Translated Data
+    const footerTranslatedData = Object.fromEntries(footerTranslated);
+    
+    //Making a FormData for Uploading into Database
+    let footerFrmData = new FormData();
+    footerFrmData.append("FooterTranslatedData" , JSON.stringify(footerTranslatedData));
+        
+    const response = await fetch(
+        getAPIPath() + "siteData.json/" + import.meta.env.SiteSettingsID2,
+        {
+            method: "POST",
+            body: footerFrmData,
+        },
+    );
+
+    console.log(response);
+    //data.append("footerTranslatedTexts", JSON.stringify(footerTranslatedData));
+}
+
+const {lang = "en", siteTitle } = Astro.props;
+
+let contentPath : any, footerText = "";
+if(lang == "en") {
+    contentPath = metaData;
+    footerText = allSiteFetch.footerText.English
+}
+else if(lang == "ru") {
+    contentPath = metaDataRu;
+    footerText = allSiteFetch.footerText.Russian
+}
+else if(lang == "zh") {
+    contentPath = metaDataZh
+    footerText = allSiteFetch.footerText.Chinese
+}
+else if(lang == "es") {
+    contentPath = metaDataEs
+    footerText = allSiteFetch.footerText.Spanish
+}
+else if(lang == "fr") {
+    contentPath = metaDataFr
+    footerText = allSiteFetch.footerText.French
+}
+else if(lang == "pt") {
+    contentPath = metaDataPt
+    footerText = allSiteFetch.footerText.Portuguese
+}
+else if(lang == "hi") {
+    contentPath = metaDataHi
+    footerText = allSiteFetch.footerText.Hindi
+}
+else if(lang == "bn") {
+    contentPath = metaDataBn
+    footerText = allSiteFetch.footerText.Bengali
+}
+else if(lang == "ur") {
+    contentPath = metaDataUr
+    footerText = allSiteFetch.footerText.Urdu
+}
+else if(lang == "id") {
+    contentPath = metaDataId
+    footerText = allSiteFetch.footerText.Indonesian
+}
+
+const Links = [
+    { title: "About Us" , url:"/page/about" },
+    { title: "Privacy Policy" , url:"/page/privacy-policy" },
+    { title: "Disclaimer" , url:"/page/disclaimer" },
+    { title: "Contact Us" , url:"/page/contact-us" },
+]
+
+
+let langDirectory = "";
+if(lang != "en"){
+    langDirectory = "/"+ lang;
+}
+---
+
+<div class="footer-content bg-[#d3d3d3] dark:bg-[#202123] p-3 flex flex-col items-center justify-center text-center rounded-2xl gap-3 lg:px-10 my-5 text-slate-600 dark:text-white">
+    <!-- <a href="/"><img class="h-16" src={logo.src} alt="{placeholder} Logo"></a> -->
+    <LogoAnimation siteLogoImage = {getImageBasePath() + allSiteFetch.siteLog} />
+
+
+    <p class="text-sm">{footerText}</p>
+
+    <ul class="flex gap-6 flex-wrap justify-center text-[#69b63d] dark:text-[#9bdd75] mt-5">
+        {
+            Links.map((link, index:number)=>(
+                <li class="cursor-pointer font-semibold hover:text-[#549330] dark:hover:text-[#69b63d] "><a href={`${langDirectory}${link.url}`}>{contentPath?.text[index+15]}</a></li>
+            ))
+        }
+    </ul>
+
+    <!-- <div class="social-links flex gap-3">
+        <a href=""><i class="fa-brands fa-facebook"></i></a>
+        <a href=""><i class="fa-brands fa-twitter"></i></a>
+        <a href=""><i class="fa-brands fa-instagram"></i></a>
+        <a href=""><i class="fa-brands fa-linkedin"></i></a>
+    </div> -->
+
+    <p>&copy; {new Date().getFullYear()} {siteTitle}</p>
+</div>

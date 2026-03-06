@@ -1,0 +1,55 @@
+---
+import HeaderBanner from "../../../components/HeaderBanner.astro";
+import MainLayout from "../../../layouts/MainLayout.astro";
+import servicescover from "../../../assets/services-cover.webp";
+import servicesicons from "../../../assets/services-icons.webp";
+import { getAPIPath, mainData } from "../../../data/utils";
+import ServicesCard from "../../../components/ServicesCard.astro";
+import SearchForm from "../../../components/SearchForm.astro";
+import { metaDataFr } from "../data";
+
+interface serviceSchema{
+    id: string,
+    serviceColor: string,
+    serviceLogo: string,
+    serviceTitle: string,
+    serviceCount: number,
+}
+
+//Fetching All Services
+const allServicesFetch:any = await fetch(getAPIPath() + "services");
+const allServiceRes : serviceSchema[] = await allServicesFetch.json();
+const allSiteFetch:any = await fetch(getAPIPath() + "siteSettings/" + import.meta.env.SITESETTINGSKEY).then(Response => Response.json());
+---
+
+<MainLayout 
+    siteTitle = {allSiteFetch.SiteTitle} 
+    lang={metaDataFr.language} 
+    title={allSiteFetch.SiteTitle + " - All Services"} 
+    metaDescription="Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veritatis ullam quod quidem laborum omnis amet nostrum velit autem vel deleniti, quas deserunt perspiciatis eveniet qui esse facilis eius quaerat numquam."
+    pageType="article">
+    
+    <HeaderBanner imgUrl={servicescover.src} iconImgUrl={servicesicons.src} titleText={metaDataFr.text[31]} descriptionText={metaDataFr.text[32]} />
+
+    <div class="services-container w-full">
+        <span class="text-base font-semibold text-white">{metaDataFr.text[31]} 👇</span>
+        <div class="searchBox flex justify-center items-center lg:w-1/2 w-full">
+            <div class="wrapper w-full">
+                <SearchForm lang={metaDataFr.language} searchPagePath={"/services/search"} isDark={true}/>
+            </div>
+        </div>
+        <div class="wrapper text-white flex lg:justify-between justify-center items-center flex-wrap gap-4 gap-y-6 my-5">
+            {
+                allServiceRes.map((service:serviceSchema, index:number) => (
+                    <ServicesCard 
+                        lang={metaDataFr.language} 
+                        serviceTitle={service.serviceTitle} 
+                        serviceLogoUrl={service.serviceLogo} 
+                        servicesCount={service.serviceCount} 
+                    />
+                ))
+            }      
+        </div>
+    </div>
+    
+</MainLayout>

@@ -1,0 +1,111 @@
+---
+import { AIPrompt, getAPIPath, getLanguage, JsonToHtml, mainData } from "../../../data/utils";
+import MainLayout from "../../../layouts/MainLayout.astro";
+import { metaDataZh } from "../data";
+
+export const prerender = true;
+
+interface pageSchema{
+    pageTitle  : string,
+    pageContent  : string,
+    PageDescription  : string,
+    pageSlug  : string,
+    dataType  : string,
+}
+
+export async function getStaticPaths (){
+    const allPagesFetch:any = await fetch(getAPIPath() + "pages")
+    const allPageRes : pageSchema[] = await allPagesFetch.json();
+
+    // Checking if it is not a Contact Page
+    for (let i = 0; i < allPageRes.length; i++) {
+        if(allPageRes[i].pageTitle.toLowerCase().includes("contact")){
+            allPageRes.splice(i, 1);
+        }
+    }
+
+    return allPageRes.map((page:any) => (
+        {
+            params : { slug: page.pageSlug },
+            props: { page },
+        }
+    ))
+} ;
+
+const { page } = Astro.props;
+
+const allSiteFetch:any = await fetch(getAPIPath() + "siteSettings/" + import.meta.env.SITESETTINGSKEY).then(Response => Response.json());
+---
+
+<MainLayout 
+    siteTitle = {allSiteFetch.SiteTitle} 
+    lang={metaDataZh.language} 
+    title={allSiteFetch.SiteTitle + " - " + page.pageTitle} 
+    metaDescription={page.pageMetaDescriptionZH}  
+    pageType="page">
+    
+    <article class="content p-6 text-[#202123] dark:text-white bg-[#d3d3d3] dark:bg-[#202123] rounded-lg my-5">
+        <h1>{page.pageTitle}</h1>
+        <div class="content" set:html={page.pageTextDescriptionZH}></div>
+    </article>
+
+</MainLayout>
+
+<style is:inline>
+    article h1{
+        font-size: 22px;
+        font-weight: 600;
+        padding-bottom: 15px;
+        padding-top: 10px;
+    }
+    .content h1{
+        font-size: 22px;
+        font-weight: 600;
+        padding-bottom: 15px;
+        padding-top: 10px;
+    }
+    .content h2{
+        font-size: 20px;
+        font-weight: 500;
+        padding-bottom: 15px;
+        padding-top: 10px;
+    }
+    .content h3{
+        font-size: 19px;
+        font-weight: 500;
+        padding-bottom: 15px;
+        padding-top: 10px;
+    }
+    .content h4{
+        font-size: 17px;
+        font-weight: 500;
+        padding-bottom: 15px;
+        padding-top: 10px;
+    }
+    .content h5{
+        font-size: 16px;
+        font-weight: 500;
+        padding-bottom: 15px;
+        padding-top: 10px;
+    }
+    .content h6{
+        font-size: 15px;
+        font-weight: 500;
+        padding-bottom: 15px;
+        padding-top: 10px;
+    }
+    .content ol{
+        list-style-type: decimal;
+        padding-left: 2rem;
+    }
+    .content p{
+        padding-bottom: 15px;
+    }
+
+    article .content a {
+        color: #ff78ec
+    }
+    article .content a:hover{
+        text-decoration-line: underline;
+    }
+</style>

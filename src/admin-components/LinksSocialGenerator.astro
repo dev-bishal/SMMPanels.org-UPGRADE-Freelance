@@ -1,0 +1,144 @@
+---
+
+---
+
+<style>
+    .dragging {
+        opacity: 0.5;
+        border: 2px dashed #3b82f6;
+        background: #eff6ff;
+    }
+</style>
+
+<div class="w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+    <div class="p-6">
+        <h2 class="block text-gray-700 text-sm font-medium mb-2">Social Link Store</h2>
+        <p class="text-sm text-gray-500 mb-6">Manage icons, labels, and URLs.</p>
+
+        <div class="space-y-3 mb-6">
+            <div class="flex gap-2">
+                <input type="text" id="linkSocialIcon" placeholder="fa-brands fa-twitter"
+                    class="w-1/3 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#3b82f6] outline-none text-sm">
+                <input type="text" id="linkSocialText" placeholder="Platform Name"
+                    class="w-2/3 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#3b82f6] outline-none text-sm">
+            </div>
+            <input type="text" id="linkSocialUrl" placeholder="https://..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#3b82f6] outline-none text-sm">
+
+            <button type="button" onclick="addSocialLink()"
+                class="w-full bg-[#3b82f6] text-white font-medium py-2 rounded-md hover:bg-blue-600 transition-colors">
+                Add Social Link
+            </button>
+        </div>
+
+        <p class="text-[10px] text-gray-400 mb-2 uppercase tracking-widest font-bold">Your Social Stack:</p>
+        <ul id="socialLinkList" class="space-y-2 mb-6 min-h-[50px]">
+        </ul>
+
+        <button type="button" onclick="exportSocialJson()"
+            class="hidden w-full border-2 border-black text-black font-bold py-2 rounded-md hover:bg-black hover:text-white transition-all">
+            Export Social JSON
+        </button>
+    </div>
+</div>
+
+<script is:inline>
+    let socialLinks = [];
+
+    function addSocialLink() {
+        debugger
+        const icon = document.getElementById('linkSocialIcon');
+        const text = document.getElementById('linkSocialText');
+        const url = document.getElementById('linkSocialUrl');
+
+        if (text.value && url.value) {
+            socialLinks.push({
+                id: `social-${Date.now()}`,
+                icon: icon.value || 'fa-solid fa-link', // Fallback icon
+                label: text.value,
+                href: url.value
+            });
+
+            icon.value = ''; text.value = ''; url.value = '';
+            renderSocialLinks();
+        }
+    }
+
+    function removeSocialLink(id) {
+        socialLinks = socialLinks.filter(link => link.id !== id);
+        renderSocialLinks();
+    }
+
+    function renderSocialLinks() {
+        const socialList = document.getElementById('socialLinkList');
+        socialList.innerHTML = '';
+
+        socialLinks.forEach((link) => {
+            const li = document.createElement('li');
+            li.className = "flex justify-between items-center p-3 bg-white border border-gray-100 rounded-lg cursor-move hover:border-[#3b82f6] transition-all";
+            li.draggable = true;
+            li.dataset.id = link.id;
+
+            // Drag Events
+            li.addEventListener('dragstart', () => li.classList.add('dragging'));
+            li.addEventListener('dragend', () => {
+                li.classList.remove('dragging');
+                updateOrder();
+            });
+
+            li.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <i class="${link.icon} text-[#3b82f6] text-lg w-6 text-center"></i>
+                        <div class="flex flex-col">
+                            <span class="text-black font-semibold text-sm">${link.label}</span>
+                            <span class="text-[10px] text-gray-400 truncate max-w-[150px]">${link.href}</span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="removeSocialLink('${link.id}')" class="text-gray-300 hover:text-red-500 transition-colors">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                `;
+            socialList.appendChild(li);
+        });
+    }
+
+    // Drag & Drop Logic
+    const socialList = document.getElementById('socialLinkList');
+    socialList.addEventListener('dragover', e => {
+        e.preventDefault();
+        const draggingItem = document.querySelector('.dragging');
+        const afterElement = getDragAfterElement(socialList, e.clientY);
+        if (afterElement == null) {
+            socialList.appendChild(draggingItem);
+        } else {
+            socialList.insertBefore(draggingItem, afterElement);
+        }
+    });
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('li:not(.dragging)')];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function updateOrder() {
+        const currentIds = [...document.querySelectorAll('#socialLinkList li')].map(li => li.dataset.id);
+        socialLinks = currentIds.map(id => socialLinks.find(link => link.id === id));
+    }
+
+    function exportSocialJson() {
+        const output = socialLinks.map(({ icon, label, href }) => ({ icon, label, href }));
+        console.clear();
+        console.log("📱 Social Links JSON:", JSON.stringify(output, null, 2));
+        alert("Social JSON logged to console!");
+    }
+
+    renderSocialLinks();
+</script>

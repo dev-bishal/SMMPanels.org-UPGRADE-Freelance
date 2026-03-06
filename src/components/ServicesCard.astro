@@ -1,0 +1,56 @@
+---
+import { formatNumberShort, getImageBasePath, optimizeImageUrl } from "../data/utils";
+import { metaData } from "../pages/data";
+import { metaDataEs } from '../pages/es/data';
+import { metaDataFr } from '../pages/fr/data';
+import { metaDataPt } from '../pages/pt/data';
+import { metaDataRu } from '../pages/ru/data';
+import { metaDataZh } from '../pages/zh/data';
+import { metaDataHi } from '../pages/hi/data';
+import { metaDataBn } from "../pages/bn/data";
+import { metaDataUr } from "../pages/ur/data";
+import { metaDataId } from "../pages/id/data";
+
+
+interface Props {
+    serviceTitle: string;
+    serviceLogoUrl: string;
+    servicesCount: number;
+    lang ?: string;
+}
+const {serviceTitle, serviceLogoUrl, servicesCount = 0, lang="en"} = Astro.props;
+
+let contentPath;
+if(lang == "en") contentPath = metaData;
+else if(lang == "ru") contentPath = metaDataRu;
+else if(lang == "zh") contentPath = metaDataZh
+else if(lang == "es") contentPath = metaDataEs
+else if(lang == "fr") contentPath = metaDataFr
+else if(lang == "pt") contentPath = metaDataPt
+else if(lang == "hi") contentPath = metaDataHi
+else if(lang == "bn") contentPath = metaDataBn
+else if(lang == "ur") contentPath = metaDataUr
+else if(lang == "id") contentPath = metaDataId
+
+let langDirectory = "";
+if(lang != "en"){
+    langDirectory = "/"+ lang
+}
+
+---
+
+<div class="service-card flex items-center gap-2 lg:w-[23%] w-[45%] rounded-md p-2 bg-[#c7c7c7d6] dark:bg-[#45454596]">
+    <img src={getImageBasePath() + serviceLogoUrl} alt={`${serviceTitle} logo`} title={serviceTitle} class="rounded-xl size-20" />
+    <div class="details h-full flex flex-col justify-between">
+        <a class="text-lg font-semibold" href={langDirectory + "/services/"+ serviceTitle.toLowerCase().replaceAll(" ", "-")}>{serviceTitle}</a>
+        
+        {
+            formatNumberShort(servicesCount) != "0" &&
+            <span class="text-sm font-semibold" title={servicesCount.toString()}>{formatNumberShort(servicesCount)} {
+                lang == "en" 
+                ? "Services"
+                : contentPath?.text[3]
+            }</span>
+        }
+    </div>
+</div>

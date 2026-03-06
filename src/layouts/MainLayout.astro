@@ -1,0 +1,47 @@
+---
+import "../global.css"
+import Sidebar from '../components/Sidebar.astro';
+import HeadTag from '../components/HeadTag.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { mainData } from '../data/utils';
+
+interface Props {
+    title : string;
+    siteTitle : string;
+    lang : string;
+    metaDescription : string;
+    pageType : string;
+    pageFeaturedImage ?: string;
+}
+
+const {siteTitle = mainData.title, title, metaDescription, pageFeaturedImage = "", pageType, lang} = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang={lang}>
+<HeadTag {title} {metaDescription} {pageType} {pageFeaturedImage}/>
+<body>
+    <div class="main-container w-full grid place-items-center">
+
+        <div class="wrapper w-full bg-[#a0a0a0] dark:bg-[#2f3237]">
+            <main class="w-full flex min-h-screen">
+                <Sidebar {lang}/>
+                <div class="content flex-1 w-full lg:p-5 p-4">
+
+                    <Header {lang}/>
+
+                    <slot />
+
+                    <Footer {lang} {siteTitle} />
+                </div>
+            </main>
+        </div>
+
+    </div>
+
+    <script is:inline>
+        console.log("This website is developed by - https://bishalbiswas.dev/");
+    </script>
+</body>
+</html>

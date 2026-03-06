@@ -1,10 +1,10 @@
 ---
-import HomeCarousal from "../components/HomeCarousal.astro";
-import HomePanelCard from "../components/HomePanelCard.astro";
-import HomePaymentOptCards from "../components/HomePaymentOptCards.astro";
-import { getAPIPath, shuffleArray, mainData, optimizeImageUrl, getImageBasePath } from "../data/utils";
-import MainLayout from "../layouts/MainLayout.astro";
-import { metaData } from "./data";
+import HomeCarousal from "../../components/HomeCarousal.astro";
+import HomePanelCard from "../../components/HomePanelCard.astro";
+import HomePaymentOptCards from "../../components/HomePaymentOptCards.astro";
+import { getAPIPath, shuffleArray, getStaticTranslation, mainData, getImageBasePath } from "../../data/utils";
+import MainLayout from "../../layouts/MainLayout.astro";
+import { metaDataFr } from "./data";
 
 // const allSidebarWidgetsFetch: any = await fetch(getAPIPath() + "sidebarWidgets.json").then(
 //     (Response) => Response.json(),
@@ -42,26 +42,30 @@ for (let i = 0; i < selectedPaymentOptions.length; i++) {
 
 const allSiteFetch:any = await fetch(getAPIPath() + "siteSettings/" + import.meta.env.SITESETTINGSKEY).then(Response => Response.json());
 
+let langDirectory = "";
+if(metaDataFr.language != "en"){
+    langDirectory = "/"+ metaDataFr.language
+}
 ---
 
 <MainLayout 
-    siteTitle = {allSiteFetch.SiteTitle}
+    siteTitle = {allSiteFetch.SiteTitle} 
     title={allSiteFetch.SiteTitle + " - Home"} 
-    lang={metaData.language} 
+    lang={metaDataFr.language}
     metaDescription={allSiteFetch.siteMetaDescription} 
     pageType="page">
     <!-- allSiteFetch.SiteTitle -->
     <div class="container-top flex flex-col lg:flex-row gap-3 my-5 w-full">
 
         <div class="top-inner flex lg:w-[600px] xl:w-[680px] 2xl:w-[800px] w-full lg:h-[360px] text-white">
-            <HomeCarousal />
+            <HomeCarousal lang={metaDataFr.language}/>
         </div>
 
             <div class="top-inner-aside flex-1 flex flex-col gap-3 bg-[#d3d3d3] dark:bg-[#202123] lg:w-1/3 w-full p-3 rounded-2xl">
             <span class="flex w-full items-center justify-between mb-2 dark:text-white">
                 <!-- {language != "en" ? getStaticTranslation("Payment Options".replaceAll(" ", "").toLocaleLowerCase(), "ru") : -->
-                <h3 class="text-2xl">{metaData.text[7]}</h3>
-                <a class="text-gray-600 dark:text-[#949fa5] text-sm" href="/payment-options/">{metaData.text[8]}</a>
+                <h3 class="text-2xl">{metaDataFr.text[7]}</h3>
+                <a class="text-gray-600 dark:text-[#949fa5] text-sm" href="/payment-options/">{metaDataFr.text[8]}</a>
 
             </span>
             
@@ -71,9 +75,9 @@ const allSiteFetch:any = await fetch(getAPIPath() + "siteSettings/" + import.met
                     {
                         selectedPaymentOptions.length > 0
                         ? selectedPaymentOptions.map((payment:any, index:number) => (
-                            <HomePaymentOptCards count={paymentOptionsCount[index]} payment={payment} index={index}  />
+                            <HomePaymentOptCards lang={metaDataFr.language} count={paymentOptionsCount[index]} payment={payment} index={index}  />
                         ))
-                        : <h3 class="text-2xl font-semibold my-2 mt-4 text-center w-full dark:text-white">{metaData.text[54]}</h3>
+                        : <h3 class="text-2xl font-semibold my-2 mt-4 text-center w-full dark:text-white">{metaDataFr.text[61]}</h3>
                     }
                 </ol>
             </div>
@@ -84,22 +88,22 @@ const allSiteFetch:any = await fetch(getAPIPath() + "siteSettings/" + import.met
         
         {
             panelsList.length > 0
-            ? <h3 class="text-2xl font-semibold my-2 mt-4 text-left w-full dark:text-white">🔥{metaData.text[11]}</h3>
-            : <h3 class="text-2xl font-semibold my-2 mt-4 text-center w-full dark:text-white">{metaData.text[54]}</h3>
+            ? <h3 class="text-2xl font-semibold my-2 mt-4 text-left w-full dark:text-white">🔥{metaDataFr.text[11]}</h3>
+            : <h3 class="text-2xl font-semibold my-2 mt-4 text-center w-full dark:text-white">{metaDataFr.text[61]}</h3>
         }
         <div class="panels-container flex flex-wrap gap-6 justify-between w-full text-slate-600 dark:text-white">
             {
-                panelsList.slice(0, allSiteFetch.homePanelCount || 12).map((panel:any) => (
-                    <HomePanelCard imgSrc={getImageBasePath() + panel.panelFeaturedImage} panelTitle={panel.panelTitle} panelUrl={panel.panelSlug} rating={panel.rating}/>
+                panelsList.slice(0, 12).map((panel:any) => (
+                    <HomePanelCard lang={metaDataFr.language} imgSrc={getImageBasePath() + panel.panelFeaturedImage} panelTitle={panel.panelTitle} panelUrl={panel.panelSlug} rating={panel.rating}/>
                 ))
             }
         </div>
 
         {
             panelsList.length > 0
-            && <a class="hover:bg-[#69b63d] bg-[#9bdd75] group my-3 font-semibold rounded-full gap-2 flex items-center px-3 py-2 w-fit" href={"/panels/"}>{metaData.text[8]} <i class="fa-solid fa-arrow-right group-hover:pl-1 transition-all ease-in-out"></i></a>
+            && <a class="hover:bg-[#69b63d] bg-[#9bdd75] group my-3 font-semibold rounded-full gap-2 flex items-center px-3 py-2 w-fit" href={langDirectory + "/panels/"}>{metaDataFr.text[8]} <i class="fa-solid fa-arrow-right group-hover:pl-1 transition-all ease-in-out"></i></a>
         }
-
+        
     </div>
 </MainLayout>
 

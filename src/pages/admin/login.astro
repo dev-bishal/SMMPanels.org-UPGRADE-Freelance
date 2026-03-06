@@ -1,0 +1,530 @@
+---
+import "../../global.css"
+import { getAPIPath, getImageBasePath } from "../../data/utils";
+let bgimage =
+"/assets/images/Admin-Profile-Vector-PNG-Picture.png";
+
+---
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>smmpanels.org | Login & Signup</title>
+        <style is:inline>
+            .auth-container {
+                transition: transform 0.6s ease-in-out;
+            }
+    
+            .auth-form {
+                transition:
+                    opacity 0.5s ease,
+                    transform 0.6s ease;
+            }
+    
+            .login-container {
+                transform: translateX(0);
+            }
+    
+            .signup-container {
+                transform: translateX(100%);
+            }
+    
+            .active .login-container {
+                transform: translateX(-100%);
+            }
+    
+            .active .signup-container {
+                transform: translateX(0);
+            }
+    
+            .form-input:focus {
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+            }
+        </style>
+    </head>
+    <body class="">
+        
+        <div class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex flex-col items-center justify-center p-4 bg-[url('/assets/images/bg.svg')]">
+            <img id="logoPreviewImg" src={bgimage} alt="Logo" class="h-36 my-5" />
+            <div class="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-md">
+                <!-- Toggle Switch -->
+                <div class="flex relative bg-gray-100 rounded-t-lg overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1/3 h-full bg-blue-600 transition-transform duration-400 ease-in-out transform translate-x-0 auth-slider"
+                        id="slider"></div>
+                    <button id="login-btn" class="w-1/3 py-4 relative z-10 text-white font-semibold">Login</button>
+                    <button id="signup-btn" class="w-1/3 py-4 relative z-10 text-gray-700 font-semibold">Sign Up</button>
+                    <button id="forgot-btn" class="w-1/3 py-4 relative z-10 text-gray-700 font-semibold">Reset</button>
+                </div>
+        
+                <!-- Forms Container -->
+                <div class="relative overflow-hidden" style="height: 500px;">
+                    <!-- Login Form -->
+                    <div class="absolute z-3 top-0 left-0 w-full h-full transition-all duration-500 ease-in-out opacity-100"
+                        id="login-form">
+                        <form id="loginForm" class="px-8 pt-8">
+                            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Welcome Back</h2>
+        
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-medium mb-2" for="login-username">Username</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-envelope text-gray-400"></i>
+                                    </div>
+                                    <input id="login-username" type="text"
+                                        class="form-input pl-10 w-full rounded-lg border border-gray-300 py-3 px-4 focus:outline-none"
+                                        placeholder="Enter your Username">
+                                </div>
+                            </div>
+        
+                            <div class="mb-6">
+                                <label class="block text-gray-700 text-sm font-medium mb-2"
+                                    for="login-password">Password</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-lock text-gray-400"></i>
+                                    </div>
+                                    <input id="login-password" type="password"
+                                        class="form-input pl-10 w-full rounded-lg border border-gray-300 py-3 px-4 focus:outline-none"
+                                        placeholder="Enter your password">
+                                </div>
+                                <a href="#"
+                                    class="text-sm text-blue-600 hover:underline mt-2 inline-block switch-to-forgot">Forgot
+                                    password?</a>
+                            </div>
+        
+                            <button id="loginSubBtn" type="submit"
+                                class="disabled:bg-gray-400 disabled:cursor-not-allowed w-full flex justify-center gap-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 mb-4 cursor-pointer">
+                                Login
+                                <div id="login-btn-loader" class="hidden ml-2">
+                                    <i class="fas fa-circle-notch animate-spin"></i>
+                                </div>
+                            </button>
+        
+                            <div class="text-center text-sm text-gray-600">
+                                Don't have an account? <a href="#"
+                                    class="text-blue-600 hover:underline font-medium switch-to-signup">Sign up</a>
+                            </div>
+                        </form>
+                    </div>
+        
+                    <!-- Signup Form -->
+                    <div class="absolute z-2 top-0 left-0 w-full h-full transition-all duration-500 ease-in-out opacity-0"
+                        id="signup-form">
+                        <form class="px-8 pt-8">
+                            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Create Account</h2>
+        
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-medium mb-2"
+                                    for="signup-username">Username</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-user text-gray-400"></i>
+                                    </div>
+                                    <input id="signup-username" type="text"
+                                        class="form-input pl-10 w-full rounded-lg border border-gray-300 py-3 px-4 focus:outline-none"
+                                        placeholder="Choose a username">
+                                </div>
+                            </div>
+        
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-medium mb-2" for="signup-email">Email</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-envelope text-gray-400"></i>
+                                    </div>
+                                    <input id="signup-email" type="email"
+                                        class="form-input pl-10 w-full rounded-lg border border-gray-300 py-3 px-4 focus:outline-none"
+                                        placeholder="Enter your email">
+                                </div>
+                            </div>
+        
+                            <div class="mb-6">
+                                <label class="block text-gray-700 text-sm font-medium mb-2"
+                                    for="signup-password">Password</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-lock text-gray-400"></i>
+                                    </div>
+                                    <input id="signup-password" type="password"
+                                        class="form-input pl-10 w-full rounded-lg border border-gray-300 py-3 px-4 focus:outline-none"
+                                        placeholder="Create a password">
+                                </div>
+                            </div>
+        
+                            <button type="submit"
+                                class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 mb-4">
+                                Sign Up
+                            </button>
+        
+                            <div class="text-center text-sm text-gray-600">
+                                Already have an account? <a href="#"
+                                    class="text-blue-600 hover:underline font-medium switch-to-login">Login</a>
+                            </div>
+                        </form>
+                    </div>
+        
+                    <!-- Forgot Password Form -->
+                    <div class="absolute z-1 top-0 left-0 w-full h-full transition-all duration-500 ease-in-out opacity-0"
+                        id="forgot-form">
+                        <form id="resetPassForm" class="px-8 pt-8">
+                            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Reset Password</h2>
+                            <p class="text-gray-600 text-center mb-6">Enter your email address and we'll send you a link to
+                                reset your password.</p>
+        
+                            <div class="mb-6">
+                                <label class="block text-gray-700 text-sm font-medium mb-2" for="forgot-email">Email</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-envelope text-gray-400"></i>
+                                    </div>
+                                    <input id="forgot-email" name="forgot-email" type="email"
+                                        class="form-input pl-10 w-full rounded-lg border border-gray-300 py-3 px-4 focus:outline-none"
+                                        placeholder="Enter your email">
+                                </div>
+                            </div>
+        
+                            <button type="submit"
+                                class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 mb-4">
+                                Send Reset Link
+                            </button>
+        
+                            <div class="text-center text-sm text-gray-600">
+                                Remember your password? <a href="#"
+                                    class="text-blue-600 hover:underline font-medium switch-to-login-from-forgot">Back to
+                                    login</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+    <script is:inline>
+        document.addEventListener('DOMContentLoaded', function () {
+            const loginBtn = document.getElementById('login-btn');
+            const signupBtn = document.getElementById('signup-btn');
+            const forgotBtn = document.getElementById('forgot-btn');
+            const loginForm = document.getElementById('login-form');
+            const signupForm = document.getElementById('signup-form');
+            const forgotForm = document.getElementById('forgot-form');
+            const slider = document.getElementById('slider');
+            const container = document.querySelector('body');
+    
+            // Switch to Login
+            function showLogin() {
+                loginBtn.classList.add('text-white');
+                loginBtn.classList.remove('text-gray-700');
+                signupBtn.classList.remove('text-white');
+                signupBtn.classList.add('text-gray-700');
+                forgotBtn.classList.remove('text-white');
+                forgotBtn.classList.add('text-gray-700');
+    
+                slider.style.transform = 'translateX(0)';
+    
+                loginForm.style.opacity = '1';
+                loginForm.style.transform = 'translateX(0)';
+                signupForm.style.opacity = '0';
+                signupForm.style.transform = 'translateX(100%)';
+                forgotForm.style.opacity = '0';
+                forgotForm.style.transform = 'translateX(200%)';
+    
+                container.classList.remove('active-signup', 'active-forgot');
+                container.classList.add('active-login');
+            }
+    
+            // Switch to Signup
+            function showSignup() {
+                signupBtn.classList.add('text-white');
+                signupBtn.classList.remove('text-gray-700');
+                loginBtn.classList.remove('text-white');
+                loginBtn.classList.add('text-gray-700');
+                forgotBtn.classList.remove('text-white');
+                forgotBtn.classList.add('text-gray-700');
+    
+                slider.style.transform = 'translateX(100%)';
+    
+                loginForm.style.opacity = '0';
+                loginForm.style.transform = 'translateX(-100%)';
+                signupForm.style.opacity = '1';
+                signupForm.style.transform = 'translateX(0)';
+                forgotForm.style.opacity = '0';
+                forgotForm.style.transform = 'translateX(100%)';
+    
+                container.classList.remove('active-login', 'active-forgot');
+                container.classList.add('active-signup');
+            }
+    
+            // Switch to Forgot Password
+            function showForgot() {
+                forgotBtn.classList.add('text-white');
+                forgotBtn.classList.remove('text-gray-700');
+                loginBtn.classList.remove('text-white');
+                loginBtn.classList.add('text-gray-700');
+                signupBtn.classList.remove('text-white');
+                signupBtn.classList.add('text-gray-700');
+    
+                slider.style.transform = 'translateX(200%)';
+    
+                loginForm.style.opacity = '0';
+                loginForm.style.transform = 'translateX(-200%)';
+                signupForm.style.opacity = '0';
+                signupForm.style.transform = 'translateX(-100%)';
+                forgotForm.style.opacity = '1';
+                forgotForm.style.transform = 'translateX(0)';
+    
+                container.classList.remove('active-login', 'active-signup');
+                container.classList.add('active-forgot');
+            }
+    
+            // Event listeners for buttons
+            loginBtn.addEventListener('click', showLogin);
+            signupBtn.addEventListener('click', showSignup);
+            forgotBtn.addEventListener('click', showForgot);
+    
+            // Event listeners for links
+            document.querySelectorAll('.switch-to-signup').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    showSignup();
+                });
+            });
+    
+            document.querySelectorAll('.switch-to-login, .switch-to-login-from-forgot').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    showLogin();
+                });
+            });
+    
+            document.querySelectorAll('.switch-to-forgot').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    showForgot();
+                });
+            });
+    
+            /* // Form submission
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const formType = this.parentElement.id;
+                    if (formType === 'login-form') {
+                        alert('Login successful!');
+                    } else if (formType === 'signup-form') {
+                        alert('Account created successfully!');
+                    } else if (formType === 'forgot-form') {
+                        alert('Password reset link sent to your email!');
+                    }
+                });
+            }); */
+        });
+    </script>
+    
+    <!-- <script is:inline src="https://www.google.com/recaptcha/api.js" async defer></script> -->
+    
+    <script is:inline define:vars={{ 
+    key: import.meta.env.API_SECURITY_KEY, 
+        settingsID: import.meta.env.SITESETTINGSKEY ,
+        APIUrl : getAPIPath(),
+        imagePath : getImageBasePath()
+        }}>
+
+        let logoFileName;
+
+        // Utility function for showing/hiding loaders
+        const toggleLoader = (btnId, loaderId, show) => {
+            const btn = document.getElementById(btnId);
+            const loader = document.getElementById(loaderId);
+            if (show) {
+                btn.disabled = true;
+                loader.classList.remove('hidden');
+            } else {
+                btn.disabled = false;
+                loader.classList.add('hidden');
+            }
+        };
+    
+        // For a single input field
+        const loginField = document.getElementById('login-username');
+        const signupField = document.getElementById('signup-username');
+        
+        loginField.addEventListener('input', function(e) {
+            // Get current value, remove all spaces, convert to lowercase
+            this.value = this.value.replace(/\s+/g, '').toLowerCase();
+        });
+        signupField.addEventListener('input', function(e) {
+            // Get current value, remove all spaces, convert to lowercase
+            this.value = this.value.replace(/\s+/g, '').toLowerCase();
+        });
+    
+        // --- LOGIN HANDLER ---
+        const loginForm = document.getElementById('loginForm');
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+    
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+    
+            // Simple Validation
+            if (!username || !password) {
+                alert('Please fill in all fields');
+                return;
+            }
+    
+            toggleLoader('loginSubBtn', 'login-btn-loader', true);
+    
+            try {
+                const response = await fetch(APIUrl + 'auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        "origin" : "http://localhost:4321",
+                        // "x-api-key" : key
+                    },
+                    body: JSON.stringify({ username, password }),
+                });
+    
+                const result = await response.json();
+                console.log(result);
+                
+                if (response.ok) {
+                    alert('Login Successful!');
+                    // ---- Store userID in cookie as "admin" ----
+                    const userID = result.user.id;
+    
+                    // Cookie for 30 days
+                    const expires = new Date();
+                    expires.setTime(
+                        expires.getTime() + 30 * 24 * 60 * 60 * 1000,
+                    );
+    
+                    document.cookie = `admin=${userID}; path=/; expires=${expires.toUTCString()};`;
+                    
+                    window.location.href = "/admin"
+                }
+                else {
+                    alert(result.error || 'Login failed');
+                }
+            } catch (error) {
+                alert('A network error occurred.');
+            } finally {
+                toggleLoader('loginSubBtn', 'login-btn-loader', false);
+            }
+        });
+    
+        // --- SIGNUP HANDLER ---
+        const signupForm = document.querySelector('#signup-form form');
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+    
+            const full_name = document.getElementById('signup-username').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+    
+            // Validation
+            if (full_name.length < 3) {
+                alert('Name must be at least 3 characters');
+                return;
+            }
+            if (password.length < 6) {
+                alert('Password must be at least 6 characters');
+                return;
+            }
+    
+            try {
+                const response = await fetch(APIUrl + 'auth/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        "origin" : "http://localhost:4321",
+                        // "x-api-key" : key
+                    },
+                    body: JSON.stringify({ email : email, username : full_name, password: password }),
+                });
+    
+                const result = await response.json();
+    
+                if (response.ok) {
+                    alert('Registration successful! Please login.');
+                    // Trigger the switch to login form
+                    document.querySelector('.switch-to-login').click();
+                } else {
+                    alert(result.error || 'Registration failed');
+                }
+            } catch (error) {
+                alert('An error occurred during registration.');
+            }
+        });
+
+        // --- RESET HANDLER ---
+        const resetForm = document.querySelector('#resetPassForm');
+        resetForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const forgotEmail = document.getElementById('forgot-email').value;
+            
+            // Simple Validation
+            if (!forgotEmail) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            try {
+                const response = await fetch(APIUrl + 'auth/forgot-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        "origin" : "http://localhost:4321",
+                        // "x-api-key" : key
+                    },
+                    body: JSON.stringify({ email : forgotEmail, logoFileName }),
+                });
+    
+                const result = await response.json();
+                
+                if (response.ok || result.status === 200) {
+                    alert('Your Password has been Reset. Check your Email.');
+                    // Trigger the switch to login form
+                    document.querySelector('.switch-to-login').click();
+                } else {
+                    alert(result.error || 'Registration failed');
+                }
+            } catch (error) {
+                
+            }
+
+        });
+        
+    
+        // Function to fetch Setting from API
+        async function fetchSettingsData() {
+            try {
+                // Replace with your actual API endpoint
+                const response = await fetch(APIUrl + "siteSettings/" + settingsID, {
+                    method: "GET",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        "origin" : "http://localhost:4321",
+                        // "x-api-key" : key
+                    },
+                });
+                const siteSettings = await response.json();
+                console.log(siteSettings);
+    
+                if (siteSettings.siteLog) {
+                    document.getElementById("logoPreviewImg").src = imagePath + siteSettings.siteLog;
+                    logoFileName = siteSettings.siteLog;
+                }
+    
+            } catch (error) {
+                console.error('Error fetching users:', error);
+            }
+        }
+    
+    
+        document.addEventListener('DOMContentLoaded', fetchSettingsData);
+    </script>
+    
+    </body>
+</html>

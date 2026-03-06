@@ -1,0 +1,155 @@
+---
+
+---
+
+<!-- Toast Container -->
+<div id="toast-container" class="toast-container top-right"></div>
+
+<!-- Toaster Header -->
+<header class="bg-white shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Toast Notification</h1>
+                <p class="text-gray-600">Custom Toast Notification using JavaScript.</p>
+            </div>
+            <div class="flex space-x-3">
+                <button id="show-notifications"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    Show Notifications
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Main Dashboard Content -->
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Toast Position Controls -->
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Toast Position Settings</h2>
+        <p class="text-gray-600 mb-6">Choose where you want your toast notifications to appear:</p>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+            <button onclick="changeToastPosition('top-right')"
+                class="position-option bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-lg font-medium text-sm active">
+                <i class="fas fa-arrow-up-right mr-2"></i>Top Right
+            </button>
+            <button onclick="changeToastPosition('top-center')"
+                class="position-option bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-lg font-medium text-sm">
+                <i class="fas fa-arrow-up mr-2"></i>Top Center
+            </button>
+            <button onclick="changeToastPosition('top-left')"
+                class="position-option bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-lg font-medium text-sm">
+                <i class="fas fa-arrow-up-left mr-2"></i>Top Left
+            </button>
+            <button onclick="changeToastPosition('bottom-left')"
+                class="position-option bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-lg font-medium text-sm">
+                <i class="fas fa-arrow-down-left mr-2"></i>Bottom Left
+            </button>
+            <button onclick="changeToastPosition('bottom-center')"
+                class="position-option bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-lg font-medium text-sm">
+                <i class="fas fa-arrow-down mr-2"></i>Bottom Center
+            </button>
+            <button onclick="changeToastPosition('bottom-right')"
+                class="position-option bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-lg font-medium text-sm">
+                <i class="fas fa-arrow-down-right mr-2"></i>Bottom Right
+            </button>
+        </div>
+
+        <!-- Toast Demo Controls -->
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Toast Notification Demo</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <button onclick="showSuccessToast()"
+                class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium flex items-center justify-center">
+                <i class="fas fa-check-circle mr-2"></i> Success
+            </button>
+            <button onclick="showErrorToast()"
+                class="bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium flex items-center justify-center">
+                <i class="fas fa-exclamation-circle mr-2"></i> Error
+            </button>
+            <button onclick="showWarningToast()"
+                class="bg-yellow-600 hover:bg-yellow-700 text-white px-4py-3 rounded-lg font-medium flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle mr-2"></i> Warning
+            </button>
+            <button onclick="showInfoToast()"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium flex items-center justify-center">
+                <i class="fas fa-info-circle mr-2"></i> Info
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button onclick="showCustomToast()"
+                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-medium">
+                Custom Toast
+            </button>
+            <button onclick="clearAllToasts()"
+                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg font-medium">
+                Clear All
+            </button>
+        </div>
+    </div>
+
+    <!-- Sample Actions that Trigger Toasts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+            <div class="space-y-4">
+                <button onclick="simulateUserRegistration()"
+                    class="w-full text-left p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-medium text-gray-800">Register New User</h4>
+                            <p class="text-gray-600 text-sm">Add a new user to the system</p>
+                        </div>
+                        <i class="fas fa-arrow-right text-gray-400"></i>
+                    </div>
+                </button>
+                <button onclick="simulateOrderProcessing()"
+                    class="w-full text-left p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-medium text-gray-800">Process Orders</h4>
+                            <p class="text-gray-600 text-sm">Process pending orders</p>
+                        </div>
+                        <i class="fas fa-arrow-right text-gray-400"></i>
+                    </div>
+                </button>
+                <button onclick="simulateDataExport()"
+                    class="w-full text-left p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-medium text-gray-800">Export Data</h4>
+                            <p class="text-gray-600 text-sm">Export dashboard data</p>
+                        </div>
+                        <i class="fas fa-arrow-right text-gray-400"></i>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">System Status</h3>
+            <div class="space-y-4">
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-600 mr-3"></i>
+                        <span class="text-green-800">All systems operational</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-yellow-600 mr-3"></i>
+                        <span class="text-yellow-800">Scheduled maintenance in 2 hours</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-info-circle text-blue-600 mr-3"></i>
+                        <span class="text-blue-800">New features available</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>

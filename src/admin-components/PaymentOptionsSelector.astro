@@ -1,0 +1,387 @@
+---
+import { getAPIPath } from "../data/utils"
+
+---
+
+<!-- Payment Gateway selector Chips -->
+<div class="max-w-4xl mx-auto bg-gray-50 rounded-lg shadow-md overflow-hidden p-6">
+    <!-- Chips Section -->
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Select a Payment Option</h2>
+        <div id="chips-container" class="flex flex-wrap gap-2">
+            <!-- Chips will be dynamically added here -->
+        </div>
+    </div>
+
+    <!-- Input Form -->
+    <div class="bg-blue-50 p-6 rounded-lg mb-8">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Enter Bonus Details</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Minimum Deposit ($)</label>
+                <input type="text" id="min-deposit"
+                    class="w-full p-3 border bg-white border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter amount">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Bonus Amount ($)</label>
+                <input type="text" id="bonus"
+                    class="w-full p-3 border bg-white border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter bonus">
+            </div>
+            <div class="flex items-end">
+                <button id="add-btn" type="button"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+                    <i class="fas fa-plus-circle mr-2"></i> Add Bonus
+                </button>
+            </div>
+        </div>
+        <p id="form-error" class="text-red-500 text-sm mt-2 hidden">Please select a Payment-Option and enter both values
+        </p>
+    </div>
+
+    <!-- Results Table -->
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Your Bonuses</h2>
+        <div class="overflow-x-auto rounded-lg border border-gray-200">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Payment-Option</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Min
+                            Deposit</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bonus
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="bonus-table-body" class="bg-white divide-y divide-gray-200">
+                    <!-- Table rows will be dynamically added here -->
+                </tbody>
+            </table>
+            <div id="empty-state" class="p-8 text-center">
+                <i class="fas fa-table text-gray-300 text-4xl mb-3"></i>
+                <p class="text-gray-500">No data added yet. Select a payment option and add your first data!</p>
+            </div>
+            <input type="hidden" name="payOptions" id="payOptions">
+        </div>
+
+        <div class="flex items-end">
+            <button type="button" id="reset-btn" class="hidden w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center ml-2">
+                <i class="fas fa-redo mr-2"></i> Reset All
+            </button>
+        </div>
+    </div>
+</div>
+
+<script is:inline>
+    let existingData = [];
+</script>
+<!-- Fetching Payment Options -->
+<script is:inline define:vars={{key:import.meta.env.API_SECURITY_KEY, APIUrl : getAPIPath()}}>
+    // Sample data - in a real app, this would come from an API
+    let payOptionData = [];
+
+    // Array to store bonus objects
+    let bonuses = [];
+
+    // DOM elements
+    const chipsContainer = document.getElementById('chips-container');
+    const minDepositInput = document.getElementById('min-deposit');
+    const bonusInput = document.getElementById('bonus');
+    const addButton = document.getElementById('add-btn');
+    const bonusTableBody = document.getElementById('bonus-table-body');
+    const emptyState = document.getElementById('empty-state');
+    const formError = document.getElementById('form-error');
+
+    // Track selected chip
+    let selectedChip = null;
+
+    // Initialize with existing data
+    function initWithExistingData(existingData) {
+        // Set bonuses to existing data
+        bonuses = [...existingData];
+
+        // Render chips with checked state for existing bonuses
+        renderChips();
+
+        // Mark chips as checked for casinos that have bonuses
+        existingData.forEach(bonus => {
+            const chips = document.querySelectorAll('.chip');
+            chips.forEach(chip => {
+                const chipName = chip.querySelector('span').textContent;
+                if (chipName === bonus.payOption) {
+                    chip.classList.add('chip-checked');
+                    chip.innerHTML = `
+                        <i class="fas fa-check mr-2"></i>
+                        <span>${chipName}</span>
+                    `;
+                }
+            });
+        });
+
+        // Update table with existing data
+        updateTable();
+    }
+
+    // Render Payment-Option chips
+    function renderChips() {
+        chipsContainer.innerHTML = '';
+        
+        payOptionData.forEach(PaymentOption => {
+            const chip = document.createElement('div');
+            chip.className = 'chip bg-gray-200 text-gray-800 px-4 py-1 rounded-full cursor-pointer transition duration-200 hover:bg-gray-300 flex items-center';
+            chip.innerHTML = `
+                <i class="fa-solid fa-money-bill-1-wave mr-2"></i>
+                <span>${PaymentOption.paymentOptTitle}</span>
+            `;
+            
+            chip.addEventListener('click', () => selectChip(chip, PaymentOption));
+            chipsContainer.appendChild(chip);
+        });
+    }
+
+    // Select a chip
+    function selectChip(chipElement, PaymentOption) {
+        // If this chip is already checked, do nothing
+        if (chipElement.classList.contains('chip-checked')) {
+            return;
+        }
+        
+        // Deselect previous chip
+        if (selectedChip && selectedChip !== chipElement) {
+            selectedChip.classList.remove('chip-selected');
+        }
+        
+        // Select new chip
+        selectedChip = chipElement;
+        chipElement.classList.add('chip-selected');
+        
+        // Clear any form errors
+        formError.classList.add('hidden');
+    }
+
+    // Add a new bonus
+    function addBonus() {
+        debugger
+        const minDeposit = parseFloat(minDepositInput.value);
+        const bonus = parseFloat(bonusInput.value);
+        
+        // Validate inputs
+        if (!selectedChip || isNaN(minDeposit) || isNaN(bonus) || minDeposit <= 0 || bonus <= 0) {
+            formError.classList.remove('hidden');
+            return;
+        }
+        
+        // Clear form error
+        formError.classList.add('hidden');
+        
+        // Create bonus object
+        const PaymentOptionName = selectedChip.querySelector('span').textContent;
+        const newBonus = {
+            payOption: PaymentOptionName,
+            payDepo: minDeposit,
+            payBonus: bonus,
+            id: Date.now() // Simple unique ID
+        };
+        
+        // Add to array
+        bonuses.push(newBonus);
+        
+        // Update chip state
+        selectedChip.classList.remove('chip-selected');
+        selectedChip.classList.add('chip-checked');
+        selectedChip.innerHTML = `
+            <i class="fas fa-check mr-2"></i>
+            <span>${PaymentOptionName}</span>
+        `;
+        
+        // Reset selected chip
+        selectedChip = null;
+        
+        // Update UI
+        updateTable();
+        
+        // Clear form
+        minDepositInput.value = '';
+        bonusInput.value = '';
+
+        console.log(bonuses);
+    }
+
+    // Remove a bonus
+    // Modified removeBonus function to handle chip state properly
+    function removeBonus(id) {
+        // Find the bonus to remove
+        const bonusToRemove = bonuses.find(bonus => bonus.id === id);
+
+        // Remove from array
+        bonuses = bonuses.filter(bonus => bonus.id !== id);
+
+        // Update the corresponding chip
+        if (bonusToRemove) {
+            const chips = document.querySelectorAll('.chip');
+            chips.forEach(chip => {
+                const chipName = chip.querySelector('span').textContent;
+                if (chipName === bonusToRemove.option) {
+                    chip.classList.remove('chip-checked');
+                    chip.innerHTML = `
+                        <i class="fas fa-dice mr-2"></i>
+                        <span>${chipName}</span>
+                    `;
+                }
+            });
+        }
+
+        updateTable();
+    }
+
+    // Update the table with current bonuses
+    function updateTable() {
+        // Clear table
+        bonusTableBody.innerHTML = '';
+        
+        if (bonuses.length === 0) {
+            emptyState.classList.remove('hidden');
+            bonusTableBody.classList.add('hidden');
+        } else {
+            emptyState.classList.add('hidden');
+            bonusTableBody.classList.remove('hidden');
+            
+            // Add each bonus as a table row
+            bonuses.forEach(bonus => {
+                const row = document.createElement('tr');
+                row.className = 'fade-in';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i class="fa-solid fa-money-bill-1-wave text-blue-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">${bonus.payOption}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${bonus.payDepo ? bonus.payDepo : "-"}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${bonus.payBonus ? bonus.payBonus : "-"}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button class="text-red-600 hover:text-red-900 delete-btn" data-id="${bonus.id}">
+                            <i class="fas fa-trash-alt mr-1"></i> Remove
+                        </button>
+                    </td>
+                `;
+                
+                bonusTableBody.appendChild(row);
+            });
+            
+            // Add event listeners to delete buttons
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    removeBonus(id);
+                });
+            });
+
+            document.querySelector("#payOptions").value = JSON.stringify(bonuses);
+        }
+    }
+
+    // Fetching Payment Options Request
+    async function fetchData() {
+        try {
+            const response = await fetch(APIUrl + "payments", {
+                method: "GET",
+                headers : {
+                    'Content-Type': 'application/json',
+                    "origin" : "http://localhost:4321",
+                    "x-api-key" : key
+                }
+            });
+        
+            const data = await response.json();
+            console.log("API Response:", data);
+            // Initial render
+            payOptionData = data;
+            renderChips();
+            updateTable();
+            addButton.addEventListener('click', addBonus);
+            
+            // Add Enter key support
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    addBonus();
+                }
+            });
+        
+            if (response.ok && response.status === 200) {
+
+            } else {
+                // alert("Login failed: " + data.message);
+                toastSystem.show({
+                    type: 'error',
+                    title: 'Error occured',
+                    message: `An error occured while fetching Payment Options`,
+                    duration: 6000
+                });
+            }
+        } catch (error) {
+            // alert("Login failed: " + data.message);
+            toastSystem.show({
+                type: 'error',
+                title: 'Error occured',
+                message: `An error occured while fetching Payment Options`,
+                duration: 6000
+            });
+        }
+    }
+
+    // Reset All Bonus values and Data
+    function resetAll() {
+        // Clear bonuses array
+        debugger;
+        bonuses = [];
+        
+        // Reset all chips to normal state
+        const chips = document.querySelectorAll('.chip');
+        chips.forEach(chip => {
+            chip.classList.remove('chip-selected', 'chip-checked');
+            const chipName = chip.querySelector('span').textContent;
+            chip.innerHTML = `
+                <i class="fas fa-dice mr-2"></i>
+                <span>${chipName}</span>
+            `;
+        });
+
+        // Reset selected chip
+        selectedChip = null;
+
+        // Clear input fields
+        minDepositInput.value = '';
+        bonusInput.value = '';
+
+        // Clear form error
+        formError.classList.add('hidden');
+
+        // Update table
+        updateTable();
+    }
+    document.querySelector("#reset-btn").addEventListener("click", resetAll);
+
+    // Initialize the app when DOM is loaded
+    document.addEventListener('DOMContentLoaded', ()=>{
+        fetchData();
+        
+        setTimeout(() => {
+            if(existingData)
+                bonuses = existingData;
+                initWithExistingData(existingData);
+        }, 3000);
+    });
+</script>

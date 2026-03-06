@@ -1,0 +1,28 @@
+---
+interface Props {
+    imgUrl : string,
+    iconImgUrl : string,
+    titleText : string,
+    lang ?: string;
+    descriptionText : string,
+}
+
+const {imgUrl, iconImgUrl, titleText, descriptionText, lang} = Astro.props
+---
+
+<div class="top-inner relative flex flex-col gap-3 bg-[#1e1e1e] w-full rounded-2xl bg-cover bg-no-repeat my-4">
+    
+    <div class="background-container absolute size-full z-0">
+        <img src={imgUrl} alt={titleText + " cover image"} class="w-full object-cover size-full rounded-2xl">
+        <div class="brightnessLow-overlay absolute z-0 top-0 left-0 rounded-2xl bg-gradient-to-b from-[#0000006e] to-[black] w-full h-full"></div>
+    </div>
+
+    <div class="header relative z-[1] bottom-4 top-0    p-4 pt-8 flex gap-3 items-end text-white justify-between w-full" class:list={[
+        (lang == "ur") && "text-right" 
+    ]}> 
+        <span> <h1 class="text-xl font-bold mb-3">{titleText}</h1> 
+            <p class="font-semi/bold mb-3 leading-6">{descriptionText}</p> 
+        </span> 
+        <img src={iconImgUrl} alt="icons image" class="size-36 object-contain"> 
+    </div>  
+</div>

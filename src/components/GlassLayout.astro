@@ -1,0 +1,25 @@
+---
+interface Props {
+    otherClass ?: string,
+    isTopMarginEnabled ?: boolean,
+    isGlassDark ?: boolean,
+    borderColor ?: string
+}
+const {otherClass, isTopMarginEnabled=true, isGlassDark = false, borderColor} = Astro.props;
+---
+
+<section class="relative flex justify-center items-center bg-cover bg-center bg-no-repeat" class:list={
+        [
+            otherClass,
+            isTopMarginEnabled && "lg:mt-8"
+        ]
+    }>
+    <div class="brightnessLow-overlay absolute z-0 rounded-lg w-full h-full" class:list={[
+        isGlassDark ? "bg-[#44444469]" : "bg-[#bebebe69]",
+        borderColor && `border border-[${borderColor}]`
+    ]}></div>
+    
+    <slot />
+    
+</section>
+

@@ -1,0 +1,28 @@
+---
+import {getImageBasePath, optimizeImageUrl} from "../data/utils";
+
+interface Props {
+    img : string,
+    title : string,
+    panelsCount : number,
+    lang ?: string;
+}
+const {img, title, panelsCount, lang="en"} = Astro.props;
+
+let langDirectory = "";
+if(lang != "en"){
+    langDirectory = "/"+ lang
+}
+
+---
+
+<div class="relative bg-[#c7c7c7d6] dark:bg-[#444444d6] rounded-md flex justify-center items-center bg-cover bg-center bg-no-repeat w-[30%] lg:w-[24%] min-h-[150px] lg:min-h-max p-3 hover:scale-105 hover:shadow-xl transition-all ease-in-out text-white text-center font-semibold">
+    <a href={`${langDirectory}/payment-options/`+ title.toLowerCase().replaceAll(" ", "-").replaceAll("/", "-")} class="content flex lg:flex-row flex-col relative items-center gap-3 z-1">
+        <img
+            class="brandImg size-[64px] rounded-full object-cover"
+            src={getImageBasePath() + img}
+            alt={title + " payment option"}
+        />
+        <span>{title}</span>
+    </a>
+</div>

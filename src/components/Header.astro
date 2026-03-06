@@ -1,0 +1,289 @@
+---
+/* import logo from '../assets/Brilliant Waves.png'; */
+import { metaData } from '../pages/data';
+import { metaDataEs } from '../pages/es/data';
+import { metaDataFr } from '../pages/fr/data';
+import { metaDataPt } from '../pages/pt/data';
+import { metaDataRu } from '../pages/ru/data';
+import { metaDataZh } from '../pages/zh/data';
+import { metaDataHi } from '../pages/hi/data';
+import { metaDataBn } from "../pages/bn/data";
+import { metaDataUr } from "../pages/ur/data";
+import { metaDataId } from "../pages/id/data";
+import LogoAnimation from './LogoAnimation.astro';
+import { getAPIPath, getImageBasePath } from '../data/utils';
+
+interface Props {
+    lang ?: string;
+}
+
+const {lang, } = Astro.props;
+
+let contentPath, urlPath;
+if(lang == "en") {
+    contentPath = metaData;
+    urlPath = ""
+}
+else if(lang == "ru") {
+    contentPath = metaDataRu;
+    urlPath = "/ru"
+}
+else if(lang == "zh") {
+    contentPath = metaDataZh
+    urlPath = "/zh"
+}
+else if(lang == "es") {
+    contentPath = metaDataEs
+    urlPath = "/es"
+}
+else if(lang == "fr") {
+    contentPath = metaDataFr
+    urlPath = "/fr"
+}
+else if(lang == "pt") {
+    contentPath = metaDataPt
+    urlPath = "/pt"
+}
+else if(lang == "hi") {
+    contentPath = metaDataHi
+    urlPath = "/hi"
+}
+else if(lang == "bn") {
+    contentPath = metaDataBn
+    urlPath = "/bn"
+}
+else if(lang == "ur") {
+    contentPath = metaDataUr
+    urlPath = "/ur"
+}
+else if(lang == "id") {
+    contentPath = metaDataId
+    urlPath = "/id"
+}
+
+const allSiteFetch:any = await fetch(getAPIPath() + "siteSettings/" + import.meta.env.SITESETTINGSKEY).then(Response => Response.json());
+---
+<style>
+    .checkbox:checked+.checkbox-label .ball {
+        transform: translateX(33px);
+    }
+
+    /* Menu Button 3 */
+    .menu-btn-3 {
+        height: 17.5px;
+        width: 20px;
+        cursor: pointer;
+    }
+    
+    .menu-btn-3 span,
+    .menu-btn-3 span::before,
+    .menu-btn-3 span::after {
+        background: #ffffff; 
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 3px;         
+        margin-top: 7px;
+        border-radius: 10px;
+        
+        -webkit-transform: rotate(180deg);
+        -moz-transform: rotate(180deg);
+        -o-transform: rotate(deg);
+        transform: rotate(180deg);
+        -webkit-transition: .5s ease-in-out;
+        -moz-transition: .5s ease-in-out;
+        -o-transition: .5s ease-in-out;
+        transition: .5s ease-in-out;
+    }
+    .menu-btn-3 span{
+        background: #acacac; 
+    }
+    .menu-btn-3 span::before {
+        margin-top:-7px;
+    }
+    .menu-btn-3 span::after {
+        margin-top:7px;
+    }
+    .menu-btn-3.active span {
+        background: transparent;
+    }
+    .menu-btn-3.active span::before {
+        margin-top: 0;
+        -webkit-transform: rotate(45deg);
+        -moz-transform: rotate(45deg);
+        -o-transform: rotate(45deg);
+        transform: rotate(45deg);
+    }
+    .menu-btn-3.active span::after {
+        transform: rotate(-45deg);
+        margin-top: 0;
+    }
+</style>
+
+<div class="top-header bg-[#d3d3d3] dark:bg-[#202123] p-3 flex items-center justify-between rounded-2xl">
+    <span class="lg:hidden w-[45%] block">
+
+    <LogoAnimation siteLogoImage = {getImageBasePath() + allSiteFetch.siteLog} isSmall={true}/>
+        <!-- <a href="/"><img class="h-12" src={logo.src} alt="{placeholder} Logo"></a> -->
+    </span>
+    
+    <div class="searchBox relative w-2/5 hidden lg:flex items-center dark:text-white">
+        <i class="fa-duotone fa-solid fa-magnifying-glass absolute left-8"></i>
+        <form method="get" action={urlPath + "/search"} class="lg:w-full flex items-center gap-3">
+            <input name="q" type="text" class="p-2 py-3 pl-12 flex-1 rounded-full bg-[#a0a0a0] dark:bg-[#2f3237] placeholder-slate-600" placeholder={contentPath?.text[4]}>
+            <button type="submit" class="hover:bg-[#69b63d] bg-[#9bdd75] rounded-full size-10 grid place-items-center"><i class="fa-light fa-arrow-right"></i></button>
+        </form>
+    </div>
+
+    <div class="otherOptions flex-1 md:flex-initial flex gap-3 items-center text-slate-900 dark:text-white">
+
+        <span class="language-selector relative cursor-pointer flex items-center gap-2 px-2 py-1 rounded-full bg-[#a0a0a0] dark:bg-[#2f3237]">
+            <i class="fa-sharp-duotone fa-solid fa-earth-americas"></i>
+            <span class="uppercase">{lang}</span>
+            <i class="fa-solid fa-angle-down"></i>
+
+            <ul class="absolute z-[2] border-white border top-[40px] right-0 bg-[#a0a0a0] dark:bg-[#2f3237] py-2 text-sm w-max opacity-0 invisible rounded-lg text-white transition-all duration-200 ease-in-out">
+                <li class="px-2 py-1 hover:bg-slate-700">(EN) English</li>
+                <li class="px-2 py-1 hover:bg-slate-700">(RU) Russian</li>
+                <li class="px-2 py-1 hover:bg-slate-700">(ZH) Chinese</li>
+                <li class="px-2 py-1 hover:bg-slate-700">(ES) Spanish</li>
+                <li class="px-2 py-1 hover:bg-slate-700">(FR) French</li>
+                <li class="px-2 py-1 hover:bg-slate-700">(PT) Portuguese</li>
+                <li class="px-2 py-1 hover:bg-slate-700">(HI) Hindi</li>
+                <li class="px-2 py-1 hover:bg-slate-700">(BN) Bengali</li>
+                <li class="px-2 py-1 hover:bg-slate-700">(UR) Urdu</li>
+                <li class="px-2 py-1 hover:bg-slate-700">(ID) Indonesian</li>
+            </ul>
+        </span>
+
+        <span class="darkmodeToggle block lg:scale-100 scale-125">
+            <input tabindex="-1" type="checkbox" class="checkbox absolute opacity-0" id="themeToggleCheckbox" aria-label="Toggle theme (Dark/Light)"/>
+            <label tabindex="0" for="themeToggleCheckbox" class="tabClick checkbox-label bg-[#a0a0a0] dark:bg-[#2f3237] w-[60px] h-[26px] rounded-full relative p-1 cursor-pointer flex justify-between items-center px-2" >
+                <i aria-hidden="true" class="fas fa-moon "></i>
+                <i aria-hidden="true" class="fas fa-sun text-yellow-500"></i>
+                <span class="ball absolute bg-white size-5 left-[3px] top-[3px] rounded-full transition-transform duration-200 ease-linear" ></span>
+            </label>
+        </span>
+
+    </div>
+
+    <span id="mobileMenuButton" onclick="menuBtnFunction(this.children[0])" aria-label="mobile-menu-button" class="lg:hidden grid place-items-center size-12 text-xl p-2 rounded-full hover:bg-[#2f32379d] bg-[#a0a0a0] dark:bg-[#2f3237] text-white">
+        <!-- <i class="fa-duotone fa-solid fa-bars"></i> -->
+        <div class="menu-btn-3">
+            <span></span>
+        </div>
+    </span>
+
+    <span class="hidden bg-[#616161] border-[#797979] hover:bg-[#ece8e873] dark:bg-[#81818169] bg-[#818181] cursor-no-drop"></span>
+</div>
+
+<script is:inline>
+    //#region Dark Mode Toggle
+    const themeToggleCheckbox = document.getElementById('themeToggleCheckbox');
+    themeToggleCheckbox.addEventListener("click", ()=>{
+        if(themeToggleCheckbox.checked) {
+            document.querySelector("html").classList.add("dark");
+            localStorage.theme = 'dark'
+        }
+        else {
+            document.querySelector("html").classList.remove("dark");
+            localStorage.theme = 'light'
+        }
+    })
+
+    if(localStorage.theme === "dark") document.getElementById('themeToggleCheckbox').checked = true;
+    else document.getElementById('themeToggleCheckbox').checked= false;
+    //#endregion
+
+    //#region change language
+
+    //Detecting if there is language from the local storage
+    let changeLangBtn = document.querySelector('.language-selector');
+    let langArray = ["ZH", "RU", "ES", "FR", "HI", "BN", "PT", "UR", "ID"];
+    if(localStorage.getItem("lang") == null){
+        if(langArray.includes(window.location.pathname.substring(1, 3).toUpperCase()))
+            localStorage.setItem("lang", window.location.pathname.substring(1, 3));
+        else
+            localStorage.setItem("lang", "en");
+    }
+    //If there is a lang in the Localstorage. Then automatically redirect to language relevant page but not in the case of EN
+    else if(localStorage.getItem("lang") != null && localStorage.getItem("lang") != "en"){
+        const lang = localStorage.getItem("lang") || "en"; // Default to English if no selection
+        const currentPath = window.location.pathname; // Get current path
+        const langRegex = /^\/([a-z]{2})\//; // Regex to detect language in URL
+        
+        const match = currentPath.match(langRegex);
+        const urlLang = match ? match[1] : "en"; // Extracted language or default to "en"
+        
+        if (urlLang !== lang) {
+            let newPath = currentPath.replace(langRegex, "/"); // Remove existing language prefix
+            
+            // Add language prefix if it's not English
+            if (lang !== "en") {
+                newPath = `/${lang}${newPath}`;
+            }
+        
+            // Redirect to the correct URL
+            window.location.replace(newPath);
+        }
+    }
+
+    changeLangBtn.querySelectorAll('ul li').forEach(li=>{
+        
+        if(li.innerHTML.slice(1,3).toLowerCase() == localStorage.getItem("lang")){
+            li.classList.add("bg-[#616161]");
+            li.classList.add("cursor-no-drop");
+        }
+    });
+
+    //Changing language manually
+    changeLangBtn.addEventListener('click', ()=>{
+        changeLangBtn.querySelector('ul').classList.toggle('opacity-100');
+        changeLangBtn.querySelector('ul').classList.toggle('invisible');
+    })
+
+    changeLangBtn.querySelectorAll('ul li:not(.cursor-no-drop)').forEach(li=>{
+        li.addEventListener('click', ()=>{
+            localStorage.setItem('lang', li.innerText.slice(1,3).toLowerCase());
+            changeLangBtn.querySelector('span').textContent = li.innerText.slice(1,3);
+
+            let currentPath = window.location.pathname;
+            if(langArray.includes(window.location.pathname.substring(1, 3).toUpperCase())){
+                //Situation when language is already in the url
+                for (let i = 0; i < langArray.length; i++) {
+                    if(currentPath.substring(1, 3).toUpperCase() == langArray[i]){
+                        let redirectedLang = "";
+                        //Selected language is not English 
+                        if(li.innerText.slice(1,3).toLowerCase() != "en") redirectedLang = "/" + li.innerText.slice(1,3).toLowerCase();
+                        location.href = redirectedLang + currentPath.substring(3);
+                    }
+                }
+            }
+            else
+            {
+                //Situation when English language is the default language
+                location.href = "/" + li.innerText.slice(1,3).toLowerCase() + currentPath;
+            }
+
+        })
+    })
+    //#endregion
+
+    document.addEventListener("click", function (event) {
+        const menuBtn = document.querySelector("#mobileMenuButton"); // Replace with your menu button selector
+        const sidebar = document.querySelector("aside");
+
+        // Check if the clicked element is not the menu button or inside the sidebar
+        if (!menuBtn.contains(event.target) && !sidebar.contains(event.target)) {
+            // If sidebar is open, close it
+            if (sidebar.classList.contains("-translate-x-full") === false) {
+                menuBtnFunction(menuBtn.children[0]);
+            }
+        }
+    });
+
+    function menuBtnFunction(menuBtn) {
+        menuBtn.classList.toggle("active");
+        document.querySelector("aside").classList.toggle("-translate-x-full");
+    }
+</script>

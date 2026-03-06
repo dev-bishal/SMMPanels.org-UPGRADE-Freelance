@@ -1,0 +1,157 @@
+---
+import "../global.css"
+import AdminHeader from "../admin-components/AdminHeader.astro";
+import SideBar from "../admin-components/SideBar.astro";
+interface Props {
+    PageTitle :string,
+    PageHeader :string,
+    UserName : string,
+    emailAdd : string,
+    avatarImagePath ?: string
+}
+
+const {PageTitle, PageHeader, UserName, avatarImagePath, emailAdd} = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/assets/toaster.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/solid.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/fontawesome.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.2.0/css/brands.css">
+    <title>{PageTitle}</title>
+    <slot name="headerSlot">
+    <style is:inline>
+        body{
+            overflow: hidden;
+            background-image: linear-gradient(#eff6ff, oklch(93% 0.034 272.788));
+        }
+        .page {
+            transition: opacity 0.3s ease-in-out;
+        }
+    
+        .page.active {
+            display: block;
+            opacity: 1;
+        }
+    
+        .sidebar {
+            transition: all 0.3s ease;
+        }
+    
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                z-index: 50;
+                height: 100vh;
+            }
+    
+            .sidebar.open {
+                transform: translateX(0);
+            }
+    
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 40;
+            }
+    
+            .overlay.open {
+                display: block;
+            }
+        }
+    
+        /* Notification and Profile */
+        .dropdown-menu {
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+        .dropdown-menu.open {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+        .notification-item:hover {
+            background-color: #f8fafc;
+        }
+        .profile-menu-item:hover {
+            background-color: #f8fafc;
+        }
+        .fade-in {
+            animation: fadeIn 0.2s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-linear-to-br lg:overflow-hidden from-blue-50 to-indigo-100">
+     <!-- Toast Container -->
+    <div id="toast-container" class="toast-container top-right"></div>
+    
+    <!-- Modal Container -->
+    <div id="modal-container"></div>
+    <!-- Overlay for mobile sidebar -->
+    <div class="overlay" id="overlay"></div>
+ 
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <SideBar />
+ 
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            
+            <AdminHeader {PageHeader} {UserName} {avatarImagePath} {emailAdd}/>
+ 
+            <!-- Page Content -->
+            <main class="overflow-y-auto p-4 md:p-6">
+ 
+                <slot />
+ 
+            </main>
+        </div>
+    </div>
+ 
+    <script is:inline src="/assets/toaster.js"></script>
+    <script is:inline src="/assets/modal.js"></script>
+    <script is:inline>
+        toastSystem.setPosition("bottom-right");
+    </script>
+ 
+    <script is:inline>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Get DOM elements
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const overlay = document.getElementById('overlay');
+            /* const navLinks = document.querySelectorAll('.nav-link');
+            const pages = document.querySelectorAll('.page');
+            const pageTitle = document.getElementById('page-title'); */
+ 
+            // Toggle sidebar on mobile
+            sidebarToggle.addEventListener('click', function () {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('open');
+            });
+ 
+            // Close sidebar when clicking on overlay
+            overlay.addEventListener('click', function () {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('open');
+            });
+        });
+    </script>
+</body>
+</html>
